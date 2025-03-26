@@ -1,0 +1,535 @@
+{%- liquid
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+
+  if section.settings.text_alignment == 'right'
+    assign text_alignment = 'items-end text-right'
+  elsif section.settings.text_alignment == 'center'
+    assign text_alignment = 'items-center text-center'
+  else
+    assign text_alignment = 'items-start text-left'
+  endif
+-%}
+<div
+  x-data="{ shown: false }"
+  class="{{ section.settings.card_style }}"
+  x-intersect:enter.half="shown = true"
+>
+  <div
+    class="relative flex h-96 flex-col justify-center p-4 transition-all duration-500 {{ section.settings.vertical_position }}"
+    {% if section.settings.section_animation == 'appear_rising' %}
+      :class="{ 'opacity-100 translate-y-0': shown , 'opacity-0 translate-y-24': !shown }"
+    {% elsif section.settings.section_animation == 'appear' %}
+      :class="{ 'opacity-100': shown , 'opacity-0': !shown }"
+    {% endif %}
+  >
+    {% liquid
+      assign image_class = 'image absolute inset-0 -z-20 h-96 w-full object-cover'
+      if section.settings.image_mobile != blank and section.settings.image_desktop != blank
+        assign image_desktop_class = image_class | append: ' hidden md:block'
+        assign image_mobile_class = image_class | append: ' md:hidden'
+      else
+        assign image_desktop_class = image_class
+        assign image_mobile_class = image_class
+      endif
+    %}
+    {% if section.settings.image_desktop != blank or section.settings.image_mobile != blank %}
+      {% if section.settings.image_desktop != blank %}
+        {{
+          section.settings.image_desktop
+          | image_url: width: 1920
+          | image_tag: loading: loading, class: image_desktop_class
+        }}
+      {% endif %}
+      {% if section.settings.image_mobile != blank %}
+        {{
+          section.settings.image_mobile
+          | image_url: width: 600
+          | image_tag: loading: loading, class: image_mobile_class
+        }}
+      {% endif %}
+    {% else %}
+      <div
+        class="{{ image_class }} {{ section.settings.background_color }}"
+      ></div>
+    {% endif %}
+    <div
+      class="absolute inset-0 -z-20 h-96 w-full object-cover {{ section.settings.cover_color }} {{ section.settings.cover_opacity }}"
+    ></div>
+    <div class="wrapper flex w-full flex-col {{ text_alignment }}">
+      {% if section.settings.title != blank %}
+        <h2 class="title max-w-2xl font-serif font-bold {{ section.settings.title_color }} {{ section.settings.title_size }}">
+          {{ section.settings.title }}
+        </h2>
+      {% endif %}
+      {% if section.settings.text != blank %}
+        <div class="description mt-4 max-w-2xl {{ section.settings.text_color }} {{ section.settings.text_size }}">
+          {{ section.settings.text }}
+        </div>
+      {% endif %}
+      {% if section.blocks.size > 0 %}
+        <div class="mt-8 flex gap-4">
+          {% for block in section.blocks %}
+            {% case block.type %}
+              {% when 'button' %}
+                {% if block.settings.button_text != blank %}
+                  <a
+                    aria-label="{{- block.settings.button_text -}}"
+                    class="{{ block.settings.button_style }} {{ block.settings.button_size }} {{ block.settings.button_color }}"
+                    href="{{ block.settings.button_url | default: '#' }}"
+                  >
+                    {{- block.settings.button_text -}}
+                  </a>
+                {% endif %}
+            {% endcase %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.header_short.name",
+  "class": "header-short",
+  "blocks": [
+    {
+      "name": "t:common.headers.button",
+      "type": "button",
+      "limit": 3,
+      "settings": [
+        {
+          "id": "button_color",
+          "type": "select",
+          "label": "t:common.labels.buttons.color",
+          "default": "button-primary",
+          "options": [
+            {
+              "label": "t:common.colors.primary",
+              "value": "button-primary"
+            },
+            {
+              "label": "t:common.colors.accent",
+              "value": "button-accent"
+            },
+            {
+              "label": "t:common.colors.secondary",
+              "value": "button-secondary"
+            },
+            {
+              "label": "t:common.colors.tertiary",
+              "value": "button-tertiary"
+            },
+            {
+              "label": "t:common.colors.black",
+              "value": "button-black"
+            },
+            {
+              "label": "t:common.colors.white",
+              "value": "button-white"
+            }
+          ]
+        },
+        {
+          "id": "button_size",
+          "type": "radio",
+          "label": "t:common.labels.button.size",
+          "default": "py-4",
+          "options": [
+            {
+              "label": "t:common.sizes.large",
+              "value": "py-6"
+            },
+            {
+              "label": "t:common.sizes.medium",
+              "value": "py-4"
+            },
+            {
+              "label": "t:common.sizes.small",
+              "value": "py-2"
+            }
+          ]
+        },
+        {
+          "id": "button_style",
+          "type": "select",
+          "label": "t:common.labels.button.style",
+          "default": "button",
+          "options": [
+            {
+              "label": "t:common.styles.button.solid",
+              "value": "button"
+            },
+            {
+              "label": "t:common.styles.button.outline",
+              "value": "button button-outline"
+            },
+            {
+              "label": "t:common.styles.button.ghost",
+              "value": "button button-ghost"
+            }
+          ]
+        },
+        {
+          "id": "button_text",
+          "type": "text",
+          "label": "t:common.labels.button.write",
+          "default": "Botão"
+        },
+        {
+          "id": "button_url",
+          "type": "url",
+          "label": "t:common.labels.link.write"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.header_short.name",
+      "blocks": [
+        {
+          "type": "button"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.section_layout"
+    },
+    {
+      "id": "card_style",
+      "type": "select",
+      "label": "t:common.labels.cards.style",
+      "default": "",
+      "options": [
+        {
+          "label": "t:common.labels.default.label",
+          "value": ""
+        },
+        {
+          "label": "t:common.labels.box.label",
+          "value": "section wrapper"
+        }
+      ]
+    },
+    {
+      "id": "text_alignment",
+      "type": "text_alignment",
+      "label": "t:common.labels.text.alignment",
+      "default": "center"
+    },
+    {
+      "id": "vertical_position",
+      "type": "select",
+      "label": "t:common.labels.position.vertical_desktop",
+      "default": "md:justify-center",
+      "options": [
+        {
+          "label": "t:common.alignments.top",
+          "value": "md:justify-start"
+        },
+        {
+          "label": "t:common.alignments.center",
+          "value": "md:justify-center"
+        },
+        {
+          "label": "t:common.alignments.bottom",
+          "value": "md:justify-end"
+        }
+      ]
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.title"
+    },
+    {
+      "id": "title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h4 md:text-h3",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h2 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h2"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h5 md:text-h4"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Lorem ipsum dolor sit"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.text"
+    },
+    {
+      "id": "text_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "text_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-lg",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h3"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h5"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "text",
+      "type": "richtext",
+      "label": "t:common.labels.text.write",
+      "default": "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.image"
+    },
+    {
+      "id": "image_desktop",
+      "type": "image_picker",
+      "label": "t:common.labels.image.select_desktop"
+    },
+    {
+      "id": "image_mobile",
+      "type": "image_picker",
+      "label": "t:common.labels.image.select_mobile"
+    },
+    {
+      "id": "cover_color",
+      "type": "select",
+      "label": "t:common.labels.overlay.color",
+      "default": "bg-black",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "cover_opacity",
+      "type": "select",
+      "label": "t:common.labels.overlay.opacity",
+      "default": "opacity-25",
+      "options": [
+        {
+          "label": "t:common.sizes.none",
+          "value": "opacity-0"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "opacity-25"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "opacity-75"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "opacity-95"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.animation"
+    },
+    {
+      "id": "section_animation",
+      "type": "radio",
+      "label": "t:common.labels.animation.select_behavior",
+      "default": "appear",
+      "options": [
+        {
+          "label": "t:common.animation.appear",
+          "value": "appear"
+        },
+        {
+          "label": "t:common.animation.appear_rising",
+          "value": "appear_rising"
+        },
+        {
+          "label": "Nenhum",
+          "value": "none"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

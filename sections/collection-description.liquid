@@ -1,0 +1,59 @@
+{% if collection.description != blank  %}
+<div class="section wrapper">  
+  <div class="product-description-short">
+    <div class="descricao-curta">
+      {{ collection.description | truncate: 500, '. . . '  }}
+      <br>
+      <span onclick="readmore()" class="readmore my-4 justify-center mx-auto flex button button--secondary" href="#">Leia mais</span>
+    </div>
+  </div>
+  <div class="product-description-full" style="display:none;">
+    {{ collection.description }}
+    <br>
+    <span onclick="readless()" class="readless my-4 justify-center mx-auto flex button button--secondary" href="#">Leia menos</span>
+  </div>
+</div>
+<script>
+  function readmore() {
+    var descriptionFull = document.querySelector('.product-description-full');
+    descriptionFull.style.display = 'block';
+    var descriptionShort = document.querySelector('.descricao-curta');
+    descriptionShort.style.display = 'none';
+  }
+  
+   function readless() {
+    event.preventDefault();
+    var descriptionFull = document.querySelector('.product-description-full');
+    descriptionFull.style.display = 'none';
+    var descriptionShort = document.querySelector('.descricao-curta');
+    descriptionShort.style.display = 'block';
+  }
+</script>
+{% endif %}
+    
+{% schema %}
+{
+  "tag": "section",
+  "name": "Descrição Coleção",
+  "class": "see-more",
+  "settings": [
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Lorem ipsum"
+    },
+    {
+      "id": "description",
+      "type": "text",
+      "label": "t:common.labels.description.write",
+      "default": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Descrição Coleção"
+    }
+  ]
+}
+{% endschema %}

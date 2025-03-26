@@ -1,0 +1,194 @@
+{% liquid
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+%}
+<div
+  x-data="
+    {
+      open: false,
+      productPage: 1,
+      loading: false,
+      itemCount: 0,
+      showMore(){
+        this.loading = true;
+        currentUrl = window.location.href;
+        fetch(currentUrl + `&page=` + (this.productPage+1)).then(response => {
+          if (response.status !== 200) {
+            throw new Error(response.statusText)
+          } else {
+            return response.text()
+          }
+        }).then(cartData => {
+          const products = new DOMParser().parseFromString(cartData, 'text/html').getElementById('products-container-{{ section.id }}')
+          const ul = document.getElementById('products-container-{{ section.id }}')
+
+          const productCards = Array.from(products.children)
+
+          productCards.forEach((product) => ul.appendChild(product))
+
+          this.itemCount = document.querySelectorAll('.product-card').length
+
+          this.productPage = this.productPage + 1
+          this.loading = false
+        })
+        .catch((error) => {
+          console.error(error)
+          this.loading = false
+        })
+      }
+    }
+  "
+  class="lazy-item wrapper section"
+>
+  <div
+    x-cloak
+    x-show="loading"
+    class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/40 pt-0 text-white"
+  >
+    {% render 'loading-spinner' %}
+  </div>
+
+  <form action="{{ routes.search_url }}" method="get" role="search">
+    <div class="mx-auto flex flex-col gap-2 md:max-w-screen-lg">
+      <label for="search" class="text text-body-sm font-semibold">{{ 'sections.main_search.search' | t }}</label>
+      <input
+        id="main_search"
+        type="search"
+        name="q"
+        value="{{ search.terms | escape }}"
+        {% if settings.predictive_search_enabled %}
+          role="combobox"
+          aria-expanded="false"
+          aria-owns="predictive-search-results"
+          aria-controls="predictive-search-results"
+          aria-haspopup="listbox"
+          aria-autocomplete="list"
+          autocorrect="off"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+        {% endif %}
+        placeholder="{{ 'common.placeholder.search' | t }}"
+        class="input"
+      >
+      <input type="hidden" name="type" value="product.page">
+      <input type="hidden" name="options[prefix]" value="last">
+      {% liquid
+        assign terms = search.terms | escape
+
+        if section.settings.products_limit == 0
+          assign products_limit = 100
+        else
+          assign products_limit = section.settings.products_limit
+        endif
+      %}
+      {% if search.terms != blank %}
+        {% if search.results_count > 0 %}
+          <p class="text text-center">
+            {% assign results_count = search.results_count | escape %}
+            {{ 'sections.main_search.search_results_html' | t: result_count: results_count, search: terms }}
+          </p>
+        {% else %}
+          <div class="flex flex-col items-center gap-4 md:flex-row md:gap-12">
+            <div class="order-2 flex-1 space-y-4 md:order-1 md:space-y-6">
+              <h4 class="title font-serif text-h4 font-bold md:text-h3">
+                {{ 'sections.main_search.search_results_not_found_html' | t: search: terms }}
+              </h4>
+              <p class="text text-gray-700">
+                {{ 'sections.main_search.search_results_not_exist' | t }}
+              </p>
+            </div>
+            <div class="order-1 flex-1 md:order-2">
+              {% if settings.not_found_placeholder != blank %}
+                {{
+                  settings.not_found_placeholder
+                  | image_url: width: 960, height: settings.not_found_placeholder.height
+                  | image_tag: loading: loading, fetchpriority: fetchpriority, class: 'image h-auto w-full'
+                }}
+              {% else %}
+                <img
+                  src="{{ '404.png' | asset_img_url: 'large' }}"
+                  width="100"
+                  height="100"
+                  class="image h-auto w-full"
+                  alt="{{ 'sections.main_search.search_results_not_exist' | t }}"
+                  loading="lazy"
+                  fetchpriority="{{ fetchpriority }}"
+                >
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+    {% if search.results_count > 0 %}
+      <hr class="mt-8 border-t border-black md:mt-12">
+
+      {% paginate search.results by products_limit %}
+        {% assign pages_size = paginate.pages %}
+        {% liquid
+          if search.results_count < products_limit
+            assign items_count = search.results_count
+          else
+            assign items_count = products_limit
+          endif
+        %}
+        <div
+          x-init="itemCount = {{ items_count }}"
+          class="pt-8 md:pt-12"
+        >
+          {% render 'filter', search: search, url: routes.search_url %}
+        </div>
+        <div
+          id="products-container-{{ section.id }}"
+          class="product-grid mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8"
+        >
+          {% for product in search.results limit: products_limit %}
+            <div class="flex flex-col justify-between">
+              {% render 'product-card', product: product %}
+            </div>
+          {% endfor %}
+        </div>
+        {% if settings.main_paginate_style == 'view_more' %}
+          <div class="mt-12 flex w-full items-center justify-center">
+            <button
+              class="button button-outline"
+              @click="showMore"
+              :class="productPage != {{ pages_size }} || 'hidden'"
+            >
+              {{ 'sections.main_search.view_more' | t }}
+            </button>
+          </div>
+        {% else %}
+          <div class="mx-auto mt-4 flex max-w-md flex-col gap-y-4">
+            {% render 'paginate', paginate: paginate, position: 'center' %}
+          </div>
+        {% endif %}
+      {% endpaginate %}
+    {% endif %}
+  </form>
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.main_search.name",
+  "class": "main-search",
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_limit",
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "label": "t:common.labels.products.number",
+      "default": 24
+    }
+  ]
+}
+{% endschema %}

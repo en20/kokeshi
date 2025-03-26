@@ -1,0 +1,729 @@
+{%- liquid
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+
+  assign image_class = 'carousel-item-image card-image image h-auto w-full h-full object-cover'
+  assign navigation_color = section.settings.navigation_color | replace: 'button-icon', 'bg'
+-%}
+<div class="lazy-item wrapper section {{ section.settings.background_color }}">
+  <div
+    class="flex flex-col gap-6"
+    x-data="
+      {
+        splide: null,
+        splide() {
+          const splide = new Splide(this.$refs.collection, {
+            gap: '1rem',
+            arrows: true,
+            fixedWidth: '448px',
+            pagination: false,
+            omitEnd: true,
+            focus: 0,
+            breakpoints: {
+              768: {
+                fixedWidth: '90%',
+                pagination: true,
+              },
+            },
+            classes: {
+              pagination: 'splide__pagination pagination !mt-8 gap-2',
+              page: 'splide__pagination__page pagination-dot w-2 h-2 bg-neutral-400 rounded-full',
+            },
+            i18n: {
+              prev: '{{ 'common.sr_only.previous' | t }}',
+              next: '{{ 'common.sr_only.next' | t }}',
+              first: '{{ 'common.aria_label.first_slide' | t }}',
+              last: '{{ 'common.aria_label.last_slide' | t }}',
+            }
+          })
+
+          splide.on('pagination:mounted', (data, item) => {
+            item.button.classList.replace('bg-neutral-400', '{{ navigation_color }}')
+          })
+
+          splide.on('pagination:updated', (data, prev, curr) => {
+            prev.button.classList.replace('{{ navigation_color }}', 'bg-neutral-400')
+            curr.button.classList.replace('bg-neutral-400', '{{ navigation_color }}')
+          })
+
+          const Components = splide.Components;
+
+          splide.on( 'resized', function() {
+            const isOverflow = Components.Layout.isOverflow();
+            const list       = Components.Elements.list;
+            const lastSlide  = Components.Slides.getAt( splide.length - 1 );
+
+            if ( lastSlide ) {
+              // Toggles `justify-content: center`
+              list.style.justifyContent = isOverflow ? '' : 'center';
+
+              // Remove the last margin
+              if ( ! isOverflow ) {
+                lastSlide.slide.style.marginRight = '';
+              }
+            }
+          } );
+
+          splide.mount()
+          this.splide = splide
+        }
+      }
+    "
+  >
+    {% for block in section.blocks %}
+      {% case block.type %}
+        {% when 'card_cover' %}
+          <div class="card flex flex-col gap-4 overflow-hidden border p-8 md:hidden {{ block.settings.card_bg_color }}">
+            {% assign title_tag = block.settings.title_tag %}
+            <{{ title_tag }} class="card-title font-serif font-bold {{ block.settings.title_size }} {{ block.settings.title_color }}">
+              {{ block.settings.title }}
+            </{{ title_tag }}>
+            <span class="card-description {{ block.settings.description_size }} {{ block.settings.description_color }}">
+              {{ block.settings.description }}
+            </span>
+            <a
+              aria-label="{{ block.settings.button }}"
+              href="{{ block.settings.button_url | default: '#' }}"
+              class="card-button button w-fit {{ block.settings.button_color }} {{ block.settings.button_type }}"
+            >
+              {{ block.settings.button }}
+            </a>
+          </div>
+      {% endcase %}
+    {% endfor %}
+    <div x-ref="collection" class="carousel splide">
+      <div class="splide__arrows hidden md:block">
+        <div class="absolute -left-2 flex h-full items-center md:-left-6">
+          <button
+            class="splide__arrow splide__arrow--prev button-icon z-10 disabled:hidden {{ section.settings.navigation_style }} {{ section.settings.navigation_size }} {{ section.settings.navigation_color }}"
+            type="button"
+          >
+            {% render 'chevron-icon', side: 'left' %}
+          </button>
+        </div>
+        <div class="absolute -right-2 flex h-full items-center md:-right-6">
+          <button
+            class="splide__arrow splide__arrow--next button-icon z-10 disabled:hidden {{ section.settings.navigation_style }} {{ section.settings.navigation_size }} {{ section.settings.navigation_color }}"
+            type="button"
+          >
+            {% render 'chevron-icon', side: 'right' %}
+          </button>
+        </div>
+      </div>
+      <div class="splide__track">
+        <ul class="splide__list">
+          {% for block in section.blocks %}
+            {% case block.type %}
+              {% when 'card_cover' %}
+                <li
+                  :class="{ 'splide__slide': window.innerWidth >= 768 }"
+                  class="carousel-item card hidden flex-col gap-4 overflow-hidden border p-8 md:flex {{ block.settings.card_bg_color }}"
+                  x-init="splide"
+                >
+                  {% assign title_tag = block.settings.title_tag %}
+                  <{{ title_tag }} class="card-title carousel-item-title font-serif font-bold {{ block.settings.title_size }} {{ block.settings.title_color }}">
+                    {{ block.settings.title }}
+                  </{{ title_tag }}>
+                  <span class="card-description carousel-item-description{{ block.settings.description_size }} {{ block.settings.description_color }}">
+                    {{ block.settings.description }}
+                  </span>
+                  <a
+                    aria-label="{{ block.settings.button }}"
+                    href="{{ block.settings.button_url | default: '#' }}"
+                    class="button w-fit {{ block.settings.button_color }} {{ block.settings.button_type }}"
+                  >
+                    {{ block.settings.button }}
+                  </a>
+                </li>
+              {% when 'card' %}
+                <li class="splide__slide card carousel-item overflow-hidden border bg-white">
+                  <a
+                    aria-label="{{ block.settings.title | default: block.settings.category.title }}"
+                    class="group relative h-full"
+                    href="{{ block.settings.category.url | default: '#' }}"
+                  >
+                    <div class="flex h-full flex-col gap-4 overflow-hidden">
+                      <div class="relative h-full overflow-hidden">
+                        <div class="-z-2 h-full w-full">
+                          {% if block.settings.category.image == blank %}
+                            {% render 'collection-placeholder', image_class: image_class %}
+                          {% else %}
+                            {{
+                              block.settings.category.image
+                              | image_url: width: 600
+                              | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_class
+                            }}
+                          {% endif %}
+                        </div>
+                        <div
+                          class="absolute inset-0 z-10 hidden h-full w-full bg-black opacity-60 group-hover:block"
+                        ></div>
+                        <div class="absolute inset-y-0 left-0 z-20 flex w-full items-center justify-center text-center">
+                          <div class="wrapper group flex flex-col gap-4">
+                            <div
+                              class="h-1 w-0 self-center transition-all duration-500 ease-out group-hover:w-full {{ section.settings.title_color | replace: 'text', 'bg' }}"
+                            ></div>
+                            {% assign title_tag = section.settings.title_tag %}
+                            <{{ title_tag }} class="carousel-item-title card-title font-bold {{ section.settings.title_size }} {{ section.settings.title_color }}">
+                              {{ block.settings.title | default: block.settings.category.title }}
+                            </{{ title_tag }}>
+                            <div
+                              class="h-1 w-0 self-center transition-all duration-500 ease-out group-hover:w-full {{ section.settings.title_color | replace: 'text', 'bg' }}"
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                </li>
+            {% endcase %}
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.category_carousel_elegant.name",
+  "class": "category-carousel-elegant",
+  "blocks": [
+    {
+      "name": "t:common.headers.card_cover",
+      "type": "card_cover",
+      "limit": 1,
+      "settings": [
+        {
+          "id": "title_tag",
+          "type": "select",
+          "label": "t:common.labels.title.tag",
+          "default": "h3",
+          "options": [
+            {
+              "label": "t:common.headings.h1",
+              "value": "h1"
+            },
+            {
+              "label": "t:common.headings.h2",
+              "value": "h2"
+            },
+            {
+              "label": "t:common.headings.h3",
+              "value": "h3"
+            },
+            {
+              "label": "t:common.headings.h4",
+              "value": "h4"
+            },
+            {
+              "label": "t:common.headings.h5",
+              "value": "h5"
+            },
+            {
+              "label": "t:common.headings.h6",
+              "value": "h6"
+            }
+          ]
+        },
+        {
+          "id": "title_color",
+          "type": "select",
+          "label": "t:common.labels.title.color",
+          "default": "text-white",
+          "options": [
+            {
+              "label": "t:common.colors.black",
+              "value": "text-black"
+            },
+            {
+              "label": "t:common.colors.neutral",
+              "value": "text-neutral-600"
+            },
+            {
+              "label": "t:common.colors.white",
+              "value": "text-white"
+            },
+            {
+              "label": "t:common.colors.primary",
+              "value": "text-primary"
+            },
+            {
+              "label": "t:common.colors.accent",
+              "value": "text-accent"
+            },
+            {
+              "label": "t:common.colors.secondary",
+              "value": "text-secondary"
+            },
+            {
+              "label": "t:common.colors.tertiary",
+              "value": "text-tertiary"
+            }
+          ]
+        },
+        {
+          "id": "title_size",
+          "type": "select",
+          "label": "t:common.labels.title.size",
+          "default": "text-h4 md:text-h3",
+          "options": [
+            {
+              "label": "t:common.sizes.extra_large",
+              "value": "text-h2 md:text-h1"
+            },
+            {
+              "label": "t:common.sizes.large",
+              "value": "text-h3 md:text-h2"
+            },
+            {
+              "label": "t:common.sizes.medium",
+              "value": "text-h4 md:text-h3"
+            },
+            {
+              "label": "t:common.sizes.small",
+              "value": "text-h5 md:text-h4"
+            },
+            {
+              "label": "t:common.sizes.tiny",
+              "value": "text-h6 md:text-h5"
+            }
+          ]
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "t:common.labels.title.write",
+          "default": "Economize tempo ao fazer a pré-encomenda"
+        },
+        {
+          "id": "description_color",
+          "type": "select",
+          "label": "t:common.labels.text.color",
+          "default": "text-white",
+          "options": [
+            {
+              "label": "t:common.colors.black",
+              "value": "text-black"
+            },
+            {
+              "label": "t:common.colors.neutral",
+              "value": "text-neutral-600"
+            },
+            {
+              "label": "t:common.colors.white",
+              "value": "text-white"
+            },
+            {
+              "label": "t:common.colors.primary",
+              "value": "text-primary"
+            },
+            {
+              "label": "t:common.colors.accent",
+              "value": "text-accent"
+            },
+            {
+              "label": "t:common.colors.secondary",
+              "value": "text-secondary"
+            },
+            {
+              "label": "t:common.colors.tertiary",
+              "value": "text-tertiary"
+            }
+          ]
+        },
+        {
+          "id": "description_size",
+          "type": "select",
+          "label": "t:common.labels.text.size",
+          "default": "text-body-lg",
+          "options": [
+            {
+              "label": "t:common.sizes.extra_large",
+              "value": "text-h4 md:text-h3"
+            },
+            {
+              "label": "t:common.sizes.large",
+              "value": "text-h6 md:text-h5"
+            },
+            {
+              "label": "t:common.sizes.medium",
+              "value": "text-body-lg"
+            },
+            {
+              "label": "t:common.sizes.small",
+              "value": "text-body-base"
+            },
+            {
+              "label": "t:common.sizes.tiny",
+              "value": "text-body-sm"
+            }
+          ]
+        },
+        {
+          "id": "description",
+          "type": "richtext",
+          "label": "t:common.labels.text.write",
+          "default": "<p>Prepare-se para a pré-encomenda da mais recente da nossa coleção agora. Em seguida, agilize o processo de pagamento no dia 15 de setembro.</p>"
+        },
+        {
+          "id": "button_color",
+          "type": "select",
+          "label": "t:common.labels.button.color",
+          "default": "button-white",
+          "options": [
+            {
+              "label": "t:common.colors.primary",
+              "value": "button-primary"
+            },
+            {
+              "label": "t:common.colors.accent",
+              "value": "button-accent"
+            },
+            {
+              "label": "t:common.colors.secondary",
+              "value": "button-secondary"
+            },
+            {
+              "label": "t:common.colors.tertiary",
+              "value": "button-tertiary"
+            },
+            {
+              "label": "t:common.colors.black",
+              "value": "button-black"
+            },
+            {
+              "label": "t:common.colors.white",
+              "value": "button-white"
+            }
+          ]
+        },
+        {
+          "id": "button_type",
+          "type": "select",
+          "label": "t:common.labels.button.style",
+          "default": "button",
+          "options": [
+            {
+              "label": "t:common.styles.button.solid",
+              "value": "button"
+            },
+            {
+              "label": "t:common.styles.button.outline",
+              "value": "button button-outline"
+            },
+            {
+              "label": "t:common.styles.button.link",
+              "value": "button button-link"
+            }
+          ]
+        },
+        {
+          "id": "button",
+          "type": "text",
+          "label": "t:common.labels.button.write",
+          "default": "Saber mais"
+        },
+        {
+          "id": "button_url",
+          "type": "url",
+          "label": "t:common.labels.link.write"
+        },
+        {
+          "id": "card_bg_color",
+          "type": "select",
+          "label": "t:common.labels.background.color",
+          "default": "bg-primary",
+          "options": [
+            {
+              "label": "t:common.colors.white",
+              "value": "bg-white"
+            },
+            {
+              "label": "t:common.colors.neutral",
+              "value": "bg-neutral-100"
+            },
+            {
+              "label": "t:common.colors.black",
+              "value": "bg-black"
+            },
+            {
+              "label": "t:common.colors.primary",
+              "value": "bg-primary"
+            },
+            {
+              "label": "t:common.colors.accent",
+              "value": "bg-accent"
+            },
+            {
+              "label": "t:common.colors.secondary",
+              "value": "bg-secondary"
+            },
+            {
+              "label": "t:common.colors.tertiary",
+              "value": "bg-tertiary"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "t:common.headers.card",
+      "type": "card",
+      "settings": [
+        {
+          "id": "category",
+          "type": "collection",
+          "label": "t:common.labels.categories.select"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "t:common.labels.title.write"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.category_carousel_elegant.name",
+      "blocks": [
+        {
+          "type": "card_cover"
+        },
+        {
+          "type": "card"
+        },
+        {
+          "type": "card"
+        },
+        {
+          "type": "card"
+        },
+        {
+          "type": "card"
+        },
+        {
+          "type": "card"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.cards_style"
+    },
+    {
+      "id": "title_tag",
+      "type": "select",
+      "label": "t:common.labels.title.tag",
+      "default": "h2",
+      "options": [
+        {
+          "label": "t:common.headings.h1",
+          "value": "h1"
+        },
+        {
+          "label": "t:common.headings.h2",
+          "value": "h2"
+        },
+        {
+          "label": "t:common.headings.h3",
+          "value": "h3"
+        },
+        {
+          "label": "t:common.headings.h4",
+          "value": "h4"
+        },
+        {
+          "label": "t:common.headings.h5",
+          "value": "h5"
+        },
+        {
+          "label": "t:common.headings.h6",
+          "value": "h6"
+        }
+      ]
+    },
+    {
+      "id": "title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-white",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h4 md:text-h3",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h2 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h2"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h5 md:text-h4"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.section_style"
+    },
+    {
+      "id": "navigation_color",
+      "type": "select",
+      "label": "t:common.labels.navigation.color",
+      "default": "button-icon-primary",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "button-icon-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "button-icon-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "button-icon-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "button-icon-tertiary"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "button-icon-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "button-icon-white"
+        }
+      ]
+    },
+    {
+      "id": "navigation_size",
+      "type": "radio",
+      "label": "t:common.labels.buttons.size",
+      "default": "w-12 h-12",
+      "options": [
+        {
+          "label": "t:common.sizes.medium",
+          "value": "w-12 h-12"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "w-8 h-8 p-1"
+        }
+      ]
+    },
+    {
+      "id": "navigation_style",
+      "type": "select",
+      "label": "t:common.labels.button.style",
+      "default": "button-icon",
+      "options": [
+        {
+          "label": "t:common.styles.button.solid",
+          "value": "button-icon"
+        },
+        {
+          "label": "t:common.styles.button.outline",
+          "value": "button-icon button-icon-outline"
+        },
+        {
+          "label": "t:common.styles.button.ghost",
+          "value": "button-icon button-icon-ghost"
+        }
+      ]
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

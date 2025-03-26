@@ -1,0 +1,722 @@
+{%- liquid
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+-%}
+<div class="wrapper section flex flex-col gap-16 {{ section.settings.background_color }}">
+  <div class="flex flex-col gap-2 {{ section.settings.horizontal_position }}">
+    <h2 class="title font-serif font-bold {{ section.settings.title_size }} {{ section.settings.title_color }}">
+      {{ section.settings.title }}
+    </h2>
+    <span class="description {{ section.settings.text_size }} {{ section.settings.text_color }}">
+      {{ section.settings.text }}
+    </span>
+  </div>
+  <div
+    x-data="
+      {
+        splide: null,
+        init() {
+            const splide = new Splide(this.$refs.carousel, {
+              gap: '1rem',
+              fixedWidth: '21rem',
+              omitEnd: true,
+              focus  : 0,
+              pagination: false,
+              lazyLoad: 'nearby',
+              i18n: {
+                prev: '{{ 'common.sr_only.previous' | t }}',
+                next: '{{ 'common.sr_only.next' | t }}',
+                first: '{{ 'common.aria_label.first_slide' | t }}',
+                last: '{{ 'common.aria_label.last_slide' | t }}',
+                }
+            })
+
+          function initPagination(pagination, index) {
+              pagination.addEventListener('click', () =>  splide.go(index))
+          }
+
+          const paginations = document.getElementsByClassName('pagination-item-{{ section.id }}')
+          let current
+          for (let i = 0; i < paginations.length; i++) initPagination(paginations[i], i)
+          splide.on('mounted move', () => {
+              const pagination = paginations[splide.index]
+              if (pagination) {
+                if (current) current.classList.remove('active')
+                pagination.classList.add('active')
+                current = pagination
+              }
+          })
+
+          const Components = splide.Components;
+
+          splide.on( 'resized', function() {
+            const isOverflow = Components.Layout.isOverflow();
+            const list       = Components.Elements.list;
+            const lastSlide  = Components.Slides.getAt( splide.length - 1 );
+
+            if ( lastSlide ) {
+              // Toggles `justify-content: center`
+              list.style.justifyContent = isOverflow ? '' : 'center';
+
+              // Remove the last margin
+              if ( ! isOverflow ) {
+                lastSlide.slide.style.marginRight = '';
+              }
+            }
+          } );
+
+          splide.mount()
+          this.splide = splide
+        },
+        prev() {
+          this.splide.go('<')
+        },
+        next() {
+          this.splide.go('>')
+        }
+      }
+    "
+    x-ref="carousel"
+    class="carousel splide relative flex flex-col"
+  >
+    <div class="splide__arrows hidden md:block">
+      <div class="absolute -left-2 flex h-full items-center md:-left-6">
+        <button
+          class="splide__arrow splide__arrow--prev button-icon button-icon-primary z-10 disabled:hidden"
+          type="button"
+        >
+          <svg
+            class="rotate-180"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M16.2803 11.4697C16.5732 11.7626 16.5732 12.2374 16.2803 12.5303L8.78033 20.0303C8.48744 20.3232 8.01256 20.3232 7.71967 20.0303C7.42678 19.7374 7.42678 19.2626 7.71967 18.9697L14.6893 12L7.71967 5.03033C7.42678 4.73744 7.42678 4.26256 7.71967 3.96967C8.01256 3.67678 8.48744 3.67678 8.78033 3.96967L16.2803 11.4697Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+      <div class="absolute -right-2 flex h-full items-center md:-right-6">
+        <button
+          class="splide__arrow splide__arrow--next button-icon button-icon-primary z-10 disabled:hidden"
+          type="button"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M16.2803 11.4697C16.5732 11.7626 16.5732 12.2374 16.2803 12.5303L8.78033 20.0303C8.48744 20.3232 8.01256 20.3232 7.71967 20.0303C7.42678 19.7374 7.42678 19.2626 7.71967 18.9697L14.6893 12L7.71967 5.03033C7.42678 4.73744 7.42678 4.26256 7.71967 3.96967C8.01256 3.67678 8.48744 3.67678 8.78033 3.96967L16.2803 11.4697Z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="splide__track">
+      <ul class="splide__list">
+        {% for block in section.blocks %}
+          <li class="carousel-item collection splide__slide">
+            <div class="flex flex-col gap-4">
+              <div class="group relative flex items-center justify-center overflow-hidden">
+                <div class="-z-2 w-full flex-1">
+                  {% if block.settings.category.image == blank %}
+                    {% render 'collection-placeholder',
+                      image_class: 'carousel-item-image collection-image image h-full w-full max-w-[28rem] object-contain object-center'
+                    %}
+                  {% else %}
+                    {{
+                      block.settings.category.image
+                      | image_url: width: 600
+                      | image_tag:
+                        loading: loading,
+                        fetchpriority: fetchpriority,
+                        class: 'w-full carousel-item-image collection-image image h-full max-w-[28rem] object-contain object-center'
+                    }}
+                  {% endif %}
+                </div>
+                <div
+                  class="-z-1 absolute top-0 h-full w-full opacity-0 group-hover:opacity-95 {{ section.settings.cover_opacity }} {{ section.settings.cover_color }} transition-opacity duration-500 ease-out"
+                ></div>
+                <div class="absolute left-0 top-0 flex h-full w-full items-center justify-center text-center">
+                  <div class="wrapper flex flex-col items-center gap-4">
+                    <div
+                      class="h-1 w-0 transition-all duration-500 ease-out group-hover:w-full {{ section.settings.card_title_color | replace: 'text', 'bg' }}"
+                    ></div>
+                    <h2 class="collection-title carousel-item-title font-bold {{ section.settings.card_title_color }} {{ section.settings.card_title_size }}">
+                      {{ block.settings.category.title }}
+                    </h2>
+                    <div
+                      class="h-1 w-0 transition-all duration-500 ease-out group-hover:w-full {{ section.settings.card_title_color | replace: 'text', 'bg' }}"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              {% if section.settings.show_description %}
+                {% if block.settings.text != blank or block.settings.category.description != blank %}
+                  <div class="collection-description carousel-item-description {{ section.settings.description_color }} {{ section.settings.description_size }}">
+                    {% if block.settings.text != blank %}
+                      {{ block.settings.text | strip_html }}
+                    {% else %}
+                      {{ block.settings.category.description | strip_html }}
+                    {% endif %}
+                  </div>
+                {% endif %}
+              {% endif %}
+              {% if section.settings.card_button_text != blank %}
+                <div class="flex items-center justify-center p-8">
+                  <a
+                    aria-label="{{ section.settings.card_button_text }}"
+                    class="w-full md:w-fit {{ section.settings.card_button_color }} {{ section.settings.card_button_width }} {{ section.settings.card_button_style }}"
+                    href="{{ block.settings.category.url | default: '#' }}"
+                  >
+                    {{ section.settings.card_button_text }}
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <nav class="pagination pagination-dots pagination-primary mt-8 flex justify-center md:hidden">
+      {% for block in section.blocks %}
+        <button class="pagination-item-{{ section.id }}">
+          <span class="sr-only">
+            {{ 'common.sr_only.go_to_slider' | t }}
+            {{ forloop.index -}}
+          </span>
+        </button>
+      {% endfor %}
+    </nav>
+  </div>
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.category_carousel_interactive.name",
+  "class": "category-carousel-interactive",
+  "blocks": [
+    {
+      "name": "t:sections.category_interactive.blocks.card.name",
+      "type": "card",
+      "settings": [
+        {
+          "id": "category",
+          "type": "collection",
+          "label": "t:common.labels.categories.select"
+        },
+        {
+          "id": "text",
+          "type": "richtext",
+          "label": "t:common.labels.text.write"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.category_carousel_interactive.name",
+      "blocks": [
+        {
+          "type": "card"
+        },
+        {
+          "type": "card"
+        },
+        {
+          "type": "card"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.card_text"
+    },
+    {
+      "id": "show_description",
+      "type": "checkbox",
+      "label": "t:common.labels.description.enable"
+    },
+    {
+      "id": "description_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        }
+      ]
+    },
+    {
+      "id": "description_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.section_style"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.title"
+    },
+    {
+      "id": "title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h4 md:text-h3",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h2 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h2"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h5 md:text-h4"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Categorias"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.text"
+    },
+    {
+      "id": "text_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-neutral-600",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "text_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "text",
+      "type": "richtext",
+      "label": "t:common.labels.text.write",
+      "default": "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.position"
+    },
+    {
+      "id": "horizontal_position",
+      "type": "select",
+      "label": "t:common.labels.position.horizontal",
+      "default": "justify-start text-left",
+      "options": [
+        {
+          "label": "t:common.alignments.left",
+          "value": "justify-start text-left"
+        },
+        {
+          "label": "t:common.alignments.center",
+          "value": "justify-center text-center"
+        },
+        {
+          "label": "t:common.alignments.right",
+          "value": "justify-end text-right"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.section_background"
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.card_title"
+    },
+    {
+      "id": "card_title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-white",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "card_title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h4 md:text-h3",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h2 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h2"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h5 md:text-h4"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.button_card"
+    },
+    {
+      "id": "card_button_color",
+      "type": "select",
+      "label": "t:common.labels.button.color",
+      "default": "button-primary",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "button-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "button-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "button-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "button-tertiary"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "button-white"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "button-black"
+        }
+      ]
+    },
+    {
+      "id": "card_button_width",
+      "type": "radio",
+      "label": "t:common.labels.buttons.size",
+      "default": "h-8",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "h-12"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "h-8"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "h-4"
+        }
+      ]
+    },
+    {
+      "id": "card_button_style",
+      "type": "select",
+      "label": "t:common.labels.buttons.style",
+      "default": "button",
+      "options": [
+        {
+          "label": "t:common.styles.button.solid",
+          "value": "button"
+        },
+        {
+          "label": "t:common.styles.button.outline",
+          "value": "button button-outline"
+        },
+        {
+          "label": "t:common.styles.button.ghost",
+          "value": "button button-ghost"
+        }
+      ]
+    },
+    {
+      "id": "card_button_text",
+      "type": "text",
+      "label": "t:common.labels.button.write",
+      "default": "Ver produtos"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.card_image"
+    },
+    {
+      "id": "cover_color",
+      "type": "select",
+      "label": "t:common.labels.overlay.color",
+      "default": "bg-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-600"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        }
+      ]
+    },
+    {
+      "id": "cover_opacity",
+      "type": "select",
+      "label": "t:common.labels.overlay.opacity",
+      "default": "group-hover:opacity-0",
+      "options": [
+        {
+          "label": "t:common.sizes.none",
+          "value": "group-hover:opacity-0"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "group-hover:opacity-25"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "group-hover:opacity-75"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "group-hover:opacity-95"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

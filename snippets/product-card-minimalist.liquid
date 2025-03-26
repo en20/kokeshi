@@ -1,0 +1,118 @@
+{% liquid
+  assign discountPercentage = product.selected_or_first_available_variant.compare_at_price | minus: product.selected_or_first_available_variant.price | times: 100.0 | divided_by: product.selected_or_first_available_variant.compare_at_price | round
+
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+
+  assign image_class = 'product-image image w-full object-cover '
+  if section.settings.image_ratio != blank
+    assign image_class = image_class | append: section.settings.image_ratio
+  elsif settings.product_card_image_ratio != blank
+    assign image_class = image_class | append: settings.product_card_image_ratio
+  else
+    assign image_class = image_class | append: 'aspect-[3/4]'
+  endif
+  assign image_class_scale = image_class | append: ' scale-110'
+%}
+<div class="lazy-item product-card card flex h-full flex-col overflow-auto {{ settings.card_bg_color }}">
+  <div x-data="{ onhover: false }" class="group relative w-full overflow-hidden bg-white">
+    <a
+      aria-label="{{ 'common.aria_label.product_image' | t }}"
+      href="{{ product.selected_or_first_available_variant.url | default: product.url }}"
+      {% if product.images[1] != blank %}
+        @mouseover="onhover = true"
+        @mouseleave="onhover = false"
+      {% endif %}
+    >
+      {% if product.featured_image != blank %}
+        <div
+          x-show="!onhover"
+          class="w-full"
+        >
+          {{
+            product.featured_image
+            | image_url: width: 600
+            | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_class
+          }}
+        </div>
+        {% if product.images[1] != blank %}
+          <div
+            x-show="onhover"
+            x-ref="productImage"
+            x-transition:enter="transition ease-out duration-500"
+            x-transition:enter-start="scale-90"
+            x-transition:enter-end="scale-100"
+            class="w-full"
+          >
+            {{
+              product.images[1]
+              | image_url: width: 600
+              | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_class_scale
+            }}
+          </div>
+        {% endif %}
+      {% else %}
+        {% render 'product-placeholder', image_class: image_class %}
+      {% endif %}
+    </a>
+
+    {% if settings.show_discount == 'true' and discountPercentage > 0 %}
+      <div class="tag absolute left-4 top-4 hidden px-2 py-1 text-body-sm lg:group-hover:block {{ settings.discount_background_color }} {{ settings.discount_text_color }}">
+        <span>
+          {{- discountPercentage -}}
+          {{- 'snippets.product_card.off' | t -}}
+        </span>
+      </div>
+    {% endif %}
+
+    <div class="absolute bottom-4 left-0 hidden w-full justify-between gap-4 px-4 lg:group-hover:flex">
+      <span class="product-title {{ settings.title_color }} {{ settings.title_size }}">{{ product.title }}</span>
+      {% assign product_variant = product.selected_or_first_available_variant %}
+      <div class="flex flex-col gap-1 text-end">
+        <span class="price whitespace-nowrap font-serif font-bold {{ settings.price_color }} {{ settings.price_size }}">
+          {{ product_variant.price | money }}
+        </span>
+        {% if product_variant.compare_at_price > product_variant.price %}
+          <span class="compare-at-price whitespace-nowrap line-through {{ settings.text_color }} {{ settings.text_size }}">
+            {{ product_variant.compare_at_price | money }}
+          </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-4 px-2 py-4 lg:hidden">
+    {% if settings.show_discount == 'true' and discountPercentage > 0 %}
+      <div class="tag w-fit px-2 py-1 {{ settings.discount_background_color }} {{ settings.discount_text_color }}">
+        <span>
+          {{- discountPercentage -}}
+          {{- 'snippets.product_card.off' | t -}}
+        </span>
+      </div>
+    {% endif %}
+
+    <a
+      aria-label="{{ product.title }}"
+      href="{{ product.selected_or_first_available_variant.url | default: product.url }}"
+    >
+      <span class="{{ settings.title_color }} {{ settings.title_size }} product-title">{{ product.title }}</span>
+    </a>
+
+    {% assign product_variant = product.selected_or_first_available_variant %}
+    <div class="flex items-center gap-1">
+      <span class="price whitespace-nowrap font-serif font-bold {{ settings.price_color }} {{ settings.price_size }}">
+        {{ product_variant.price | money }}
+      </span>
+      {% if product_variant.compare_at_price > product_variant.price %}
+        <span class="compare-at-price whitespace-nowrap line-through {{ settings.text_color }} {{ settings.text_size }}">
+          {{ product_variant.compare_at_price | money }}
+        </span>
+      {% endif %}
+    </div>
+  </div>
+</div>

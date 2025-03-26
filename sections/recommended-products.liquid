@@ -1,0 +1,147 @@
+<div
+  class="wrapper section product-recommendations flex flex-col gap-8 bg-neutral-100"
+  data-url="{{ routes.product_recommendations_url }}?section_id={{ section.id }}&product_id={{ product.id }}&limit=12&intent=related"
+>
+  {%- if recommendations.performed? and recommendations.products_count > 0 -%}
+    <h2 class="title font-serif font-bold md:w-2/3 text-h5 md:text-h4 text-black">{{ section.settings.title }}</h2>
+
+    <div x-data="
+        {
+          splide: null,
+          init() {
+            const splide = new Splide($refs.recommendationSlider, {
+              gap: '1rem',
+              padding: {
+                right: '6rem',
+              },
+              perPage: 4,
+              breakpoints: {
+                640: {
+                  gap: '0.5rem',
+                  padding: {
+                    right: '2rem',
+                  },
+                  perPage: 1
+                }
+              },
+              pagination: false,
+              i18n: {
+                prev: '{{ 'common.sr_only.previous' | t }}',
+                next: '{{ 'common.sr_only.next' | t }}',
+                first: '{{ 'common.aria_label.first_slide' | t }}',
+                last: '{{ 'common.aria_label.last_slide' | t }}',
+              }
+            })
+
+            function initPagination(pagination, index) {
+              pagination.addEventListener('click', () =>  splide.go(index))
+            }
+            const paginations = document.getElementsByClassName('pagination-item-{{ section.id }}')
+            let current
+            for (let i = 0; i < paginations.length; i++) initPagination(paginations[i], i)
+            splide.on('mounted move', () => {
+              const pagination = paginations[splide.index]
+              if (pagination) {
+                if (current) current.classList.remove('active')
+                pagination.classList.add('active')
+                current = pagination
+              }
+            })
+            splide.mount()
+            this.splide = splide
+          }
+        }
+      " x-ref="recommendationSlider" class="splide w-full" role="group" aria-label="Splide Basic HTML Example">
+      <div class="splide__arrows hidden md:block">
+          <div class="absolute -left-2 flex h-full items-center md:left-2">
+            <button
+              class="button-icon splide__arrow splide__arrow--prev z-10 disabled:hidden button-icon-primary button-icon w-12 h-12"
+              type="button"
+            >
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M11.0303 3.96967C11.3232 4.26256 11.3232 4.73744 11.0303 5.03033L4.81066 11.25H21C21.4142 11.25 21.75 11.5858 21.75 12C21.75 12.4142 21.4142 12.75 21 12.75H4.81066L11.0303 18.9697C11.3232 19.2626 11.3232 19.7374 11.0303 20.0303C10.7374 20.3232 10.2626 20.3232 9.96967 20.0303L2.46967 12.5303C2.17678 12.2374 2.17678 11.7626 2.46967 11.4697L9.96967 3.96967C10.2626 3.67678 10.7374 3.67678 11.0303 3.96967Z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
+          <div class="absolute -right-2 flex h-full items-center md:right-2">
+            <button
+              class="button-icon splide__arrow splide__arrow--next z-10 disabled:hidden button-icon-primary button-icon w-12 h-12"
+              type="button"
+            >
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12.9697 3.96967C13.2626 3.67678 13.7374 3.67678 14.0303 3.96967L21.5303 11.4697C21.671 11.6103 21.75 11.8011 21.75 12C21.75 12.1989 21.671 12.3897 21.5303 12.5303L14.0303 20.0303C13.7374 20.3232 13.2626 20.3232 12.9697 20.0303C12.6768 19.7374 12.6768 19.2626 12.9697 18.9697L19.1893 12.75H3C2.58579 12.75 2.25 12.4142 2.25 12C2.25 11.5858 2.58579 11.25 3 11.25H19.1893L12.9697 5.03033C12.6768 4.73744 12.6768 4.26256 12.9697 3.96967Z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="splide__track">
+          <ul class="product-carousel splide__list">
+            {% for product in recommendations.products %}
+              <li class="splide__slide flex">
+                {% render 'product-card', product: product, section: section %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <nav class="pagination-dots pagination-primary mt-8 flex justify-center md:hidden">
+          {% for product in recommendations.products %}
+            <button class="pagination-item-{{ section.id }}">
+              <span class="sr-only">
+                {{- 'common.sr_only.go_to_slider' | t }}
+                {{ forloop.index -}}
+              </span>
+            </button>
+          {% endfor %}
+        </nav>
+    </div>
+  {%- endif -%}
+</div>
+
+{% javascript %}
+  const handleIntersection = (entries, observer) => {
+    if (!entries[0].isIntersecting) return;
+
+    observer.unobserve(productRecommendationsSection);
+
+    const url = productRecommendationsSection.dataset.url;
+
+    fetch(url)
+      .then(response => response.text())
+      .then(text => {
+        const html = document.createElement('div');
+        html.innerHTML = text;
+        const recommendations = html.querySelector('.product-recommendations');
+
+        if (recommendations && recommendations.innerHTML.trim().length) {
+          productRecommendationsSection.innerHTML = recommendations.innerHTML;
+        }
+      })
+      .catch(e => {
+        console.error(e);
+      });
+  };
+
+  const productRecommendationsSection = document.querySelector('.product-recommendations');
+  const observer = new IntersectionObserver(handleIntersection, {rootMargin: '0px 0px 200px 0px'});
+
+  observer.observe(productRecommendationsSection);
+{% endjavascript %}
+
+{% schema %}
+  {
+    "name": "Produtos recomendados",
+    "presets": [
+      {
+        "name": "Produtos recomendados"
+      }
+    ],
+    "settings": [
+      {
+        "type": "text",
+        "id": "title",
+        "label": "Titulo",
+        "default": "Você pode gostar"
+      }
+    ]
+  }
+{% endschema %}

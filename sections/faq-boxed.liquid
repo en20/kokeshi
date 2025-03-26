@@ -1,0 +1,617 @@
+{% assign has_content = false %}
+
+{% for block in section.blocks %}
+  {% if block.settings.accordion_title != blank or block.settings.content != blank %}
+    {% assign has_content = true %}    
+  {% endif %}
+{% endfor %}
+
+{% if has_content %}
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {%- for block in section.blocks -%}       
+        { 
+          "@type": "Question", 
+          "name": {{ block.settings.accordion_title | json }}, 
+          "acceptedAnswer": { 
+            "@type": "Answer", 
+            "text": {{ block.settings.content | json }}
+          } 
+        }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ]
+  }
+</script>
+<div class="wrapper section flex {{ section.settings.content_position }} {{ section.settings.background_color }}">
+  <div class="w-full {{ section.settings.text_alignment }} {% if section.settings.content_position == 'flex-col items-center' %}mb-8 md:w-2/3{% else %}mr-4 md:w-1/2{% endif %}">
+    <div class="flex flex-col gap-2 px-4">
+      {% if section.settings.image != blank %}
+        <img class="image-faq" src="{{ section.settings.image | img_url: 'master' }}">
+        {% else %}
+      {% if section.settings.title != blank %}
+        {% assign title_tag = section.settings.title_tag %}
+        <{{ title_tag }} class="title font-serif font-bold {{ section.settings.title_size }} {{ section.settings.title_color }}">
+          {{ section.settings.title }}
+        </{{ title_tag }}>
+      {% endif %}
+      {% if section.settings.description != blank %}
+        <div class="description {{ section.settings.description_size }} {{ section.settings.description_color }}">
+          {{ section.settings.description }}
+        </div>
+      {% endif %}
+      
+      {% endif %}
+    </div>
+  </div>
+  <div class="flex w-full flex-col p-6 md:w-1/2 {{ section.settings.box_background_color }} {{ section.settings.box_border_radius }} {% if section.settings.show_border %} {{ section.settings.box_border_size }} {% else %} border-none {% endif %} {{ section.settings.box_border_color }}">
+    {% if section.settings.image != blank %}
+      {% if section.settings.title != blank %}
+          {% assign title_tag = section.settings.title_tag %}
+          <{{ title_tag }} class="title font-serif font-bold {{ section.settings.title_size }} {{ section.settings.title_color }} mb-4">
+            {{ section.settings.title }}
+          </{{ title_tag }}>
+        {% endif %}
+        {% if section.settings.description != blank %}
+          <div class="description {{ section.settings.description_size }} {{ section.settings.description_color }} mb-4">
+            {{ section.settings.description }}
+          </div>
+        {% endif %}
+      {% endif %}
+    {% for block in section.blocks %}
+      {% if block.settings.accordion_title != blank or block.settings.content != blank %}
+      <details class="accordion acordion-primary first:border-t-0">
+        <summary class="accordion-action {{ section.settings.accordion_title_color }} {{ section.settings.accordion_title_size }}">
+          {{ block.settings.accordion_title }}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M5.23017 7.20938C5.52875 6.92228 6.00353 6.93159 6.29063 7.23017L10 11.1679L13.7094 7.23017C13.9965 6.93159 14.4713 6.92228 14.7698 7.20938C15.0684 7.49647 15.0777 7.97125 14.7906 8.26983L10.5406 12.7698C10.3992 12.9169 10.204 13 10 13C9.79599 13 9.60078 12.9169 9.45938 12.7698L5.20938 8.26983C4.92228 7.97125 4.93159 7.49647 5.23017 7.20938Z" fill="currentColor"/>
+          </svg>
+        </summary>
+        <div class="accordion-content {{ section.settings.text_accordion_color }} {{ section.settings.text_accordion_size }}">
+          {{ block.settings.content }}
+        </div>
+      </details>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.faq_boxed.name",
+  "class": "faq-boxed",
+  "blocks": [
+    {
+      "name": "t:common.headers.accordion",
+      "type": "accordion",
+      "settings": [
+        {
+          "type": "header",
+          "content": "t:common.headers.title"
+        },
+        {
+          "id": "accordion_title",
+          "type": "text",
+          "label": "t:common.headers.title",
+          "default": "Título do acordeão"
+        },
+        {
+          "type": "header",
+          "content": "t:common.headers.text"
+        },
+        {
+          "id": "content",
+          "type": "richtext",
+          "label": "t:common.headers.text",
+          "default": "<p>Conteúdo do acordeão aqui</p>"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.faq_boxed.name",
+      "blocks": [
+        {
+          "type": "accordion"
+        },
+        {
+          "type": "accordion"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Imagem"
+    },
+    {
+      "id": "image",
+      "type": "image_picker",
+      "label": "Imagem",
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.alignment"
+    },
+    {
+      "id": "text_alignment",
+      "type": "select",
+      "label": "t:common.labels.text.alignment",
+      "default": "text-left",
+      "options": [
+        {
+          "label": "t:common.alignments.left",
+          "value": "text-left"
+        },
+        {
+          "label": "t:common.alignments.center",
+          "value": "text-center"
+        },
+        {
+          "label": "t:common.alignments.right",
+          "value": "text-right"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.position"
+    },
+    {
+      "id": "content_position",
+      "type": "select",
+      "label": "t:common.labels.alignment.select",
+      "default": "flex-col items-center",
+      "options": [
+        {
+          "label": "t:common.alignments.vertical",
+          "value": "flex-col items-center"
+        },
+        {
+          "label": "t:common.alignments.horizontal",
+          "value": "flex-col md:flex-row"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.title"
+    },
+    {
+      "id": "title_tag",
+      "type": "select",
+      "label": "t:common.labels.title.tag",
+      "default": "h2",
+      "options": [
+        {
+          "label": "t:common.headings.h1",
+          "value": "h1"
+        },
+        {
+          "label": "t:common.headings.h2",
+          "value": "h2"
+        },
+        {
+          "label": "t:common.headings.h3",
+          "value": "h3"
+        },
+        {
+          "label": "t:common.headings.h4",
+          "value": "h4"
+        },
+        {
+          "label": "t:common.headings.h5",
+          "value": "h5"
+        },
+        {
+          "label": "t:common.headings.h6",
+          "value": "h6"
+        }
+      ]
+    },
+    {
+      "id": "title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h2 md:text-h1",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h2 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h2"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h5 md:text-h4"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "id": "title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Perguntas frequentes"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.subtitle"
+    },
+    {
+      "id": "description_size",
+      "type": "select",
+      "label": "t:common.labels.subtitle.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "description_color",
+      "type": "select",
+      "label": "t:common.labels.subtitle.color",
+      "default": "text-neutral-600",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        }
+      ]
+    },
+    {
+      "id": "description",
+      "type": "richtext",
+      "label": "t:common.labels.subtitle.write",
+      "default": "<p>Descubra a nova coleção, repleta de roupas que expressam a sua personalidade única.</p>"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.accordion"
+    },
+    {
+      "type": "paragraph",
+      "content": "t:common.headers.title"
+    },
+    {
+      "id": "accordion_title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "accordion_title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": "t:common.headers.text"
+    },
+    {
+      "id": "text_accordion_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "text_accordion_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-neutral-600",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:sections.faq_boxed.settings.bg_faq.label"
+    },
+    {
+      "id": "box_background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:sections.faq_boxed.settings.border.label"
+    },
+    {
+      "id": "box_border_radius",
+      "type": "select",
+      "label": "t:common.labels.border.radius",
+      "default": "rounded-lg",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "rounded-2xl"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "rounded-lg"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "rounded"
+        },
+        {
+          "label": "t:common.sizes.none",
+          "value": "rounded-none"
+        }
+      ]
+    },
+    {
+      "id": "show_border",
+      "type": "checkbox",
+      "label": "t:common.labels.border.show",
+      "default": false
+    },
+    {
+      "id": "box_border_size",
+      "type": "select",
+      "label": "t:common.labels.border.size",
+      "default": "border",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "border-4"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "border-2"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "border"
+        }
+      ]
+    },
+    {
+      "id": "box_border_color",
+      "type": "select",
+      "label": "t:common.labels.border.color",
+      "default": "border-neutral-600",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "border-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "border-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "border-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "border-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "border-accent"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.background"
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-neutral-100",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

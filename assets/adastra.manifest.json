@@ -1,0 +1,33 @@
+{
+  "src/entrypoints/alpine.js": {
+    "file": "alpine.js",
+    "isEntry": true,
+    "src": "src/entrypoints/alpine.js"
+  },
+  "src/entrypoints/base.css": {
+    "file": "base.css",
+    "isEntry": true,
+    "src": "src/entrypoints/base.css"
+  },
+  "src/entrypoints/index.js": {
+    "file": "index.js",
+    "imports": [
+      "src/entrypoints/splide.js",
+      "src/entrypoints/alpine.js"
+    ],
+    "isEntry": true,
+    "src": "src/entrypoints/index.js"
+  },
+  "src/entrypoints/splide.css": {
+    "file": "splide.css",
+    "src": "src/entrypoints/splide.css"
+  },
+  "src/entrypoints/splide.js": {
+    "css": [
+      "splide.css"
+    ],
+    "file": "splide.js",
+    "isEntry": true,
+    "src": "src/entrypoints/splide.js"
+  }
+}

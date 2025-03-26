@@ -1,0 +1,325 @@
+{%- liquid
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+-%}
+
+{% capture blocks %}
+  {% for block in section.blocks %}
+    {% case block.type %}
+      {% when 'image' %}
+        <li class="carousel-item splide__slide">
+          <a aria-label="{{ 'common.aria_label.image' | t }}" href="{{ block.settings.image_url | default: '#' }}">
+            {% if block.settings.image_desktop == blank and block.settings.image_mobile == blank %}
+              <img
+                src="{{ 'image-placeholder-5.jpg' | asset_img_url: 'large' }}"
+                width="2"
+                height="2"
+                alt="{{ 'common.alt.background_image' | t }}"
+                loading="lazy"
+                fetchpriority="{{ fetchpriority }}"
+                class="carousel-item-image image h-[36rem] w-full object-cover object-center"
+              >
+            {% else %}
+              {% liquid
+                assign image_class = 'h-[36rem] carousel-item-image image w-full object-cover object-center'
+                if block.settings.image_mobile != blank
+                  assign image_desktop_class = image_class | append: ' hidden md:block'
+                  assign image_mobile_class = image_class | append: ' md:hidden'
+                else
+                  assign image_desktop_class = image_class
+                  assign image_mobile_class = image_class
+                endif
+              %}
+              {% if block.settings.image_desktop != blank %}
+                {{
+                  block.settings.image_desktop
+                  | image_url: width: 1920
+                  | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_desktop_class
+                }}
+              {% endif %}
+              {% if block.settings.image_mobile != blank %}
+                {{
+                  block.settings.image_mobile
+                  | image_url: width: 600
+                  | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_mobile_class
+                }}
+              {% endif %}
+            {% endif %}
+        </a>
+        </li>
+      {% when 'video' %}
+        <li class="carousel-item splide__slide">
+          <a aria-label="{{ 'common.aria_label.video' | t }}" href="{{ block.settings.video_url | default: '#' }}">
+            {% if block.settings.video_desktop == blank and block.settings.video_mobile == blank %}
+              <video
+                autoplay
+                loop
+                muted
+                playsinline
+                class="carousel-item-video video h-[36rem] w-full object-cover object-center"
+              >
+                <source src="{{ 'video-placeholder.mp4' | asset_url }}" type="video/mp4">
+              </video>
+            {% else %}
+              {% liquid
+                assign video_class = 'carousel-item-video video h-[36rem] w-full object-cover object-center'
+                if block.settings.video_mobile != blank
+                  assign video_desktop_class = video_class | append: ' hidden md:block'
+                  assign video_mobile_class = video_class | append: ' md:hidden'
+                else
+                  assign video_desktop_class = video_class
+                  assign video_mobile_class = video_class
+                endif
+              %}
+              {% if block.settings.video_desktop != blank %}
+                {{
+                  block.settings.video_desktop
+                  | video_tag:
+                    autoplay: true,
+                    loop: true,
+                    muted: true,
+                    playsinline: true,
+                    class: video_desktop_class
+                }}
+              {% endif %}
+              {% if block.settings.video_mobile != blank %}
+                {{
+                  block.settings.video_mobile
+                  | video_tag:
+                    autoplay: true,
+                    loop: true,
+                    muted: true,
+                    playsinline: true,
+                    class: video_mobile_class
+                }}
+              {% endif %}
+            {% endif %}
+          </a>
+        </li>
+    {% endcase %}
+  {% endfor %}
+{% endcapture %}
+
+<div
+  class=" {{ section.settings.background_color }}"
+  x-data="
+    {
+      splide: null,
+      init() {
+        const splide = new Splide(this.$refs.navigation, {
+          perPage: 1,
+          pagination: false,
+          i18n: {
+            prev: '{{ 'common.sr_only.previous' | t }}',
+            next: '{{ 'common.sr_only.next' | t }}',
+            first: '{{ 'common.aria_label.first_slide' | t }}',
+            last: '{{ 'common.aria_label.last_slide' | t }}',
+          }
+        })
+
+        function initPagination(pagination, index) {
+          pagination.addEventListener('click', () =>  splide.go(index))
+        }
+        const paginations = document.getElementsByClassName('pagination-item-{{ section.id }}')
+        let current
+        for (let i = 0; i < paginations.length; i++) initPagination(paginations[i], i)
+        splide.on('mounted move', () => {
+          const pagination = paginations[splide.index]
+          if (pagination) {
+            if (current) current.classList.remove('active')
+            pagination.classList.add('active')
+            current = pagination
+          }
+        })
+        splide.mount()
+        this.splide = splide
+      },
+    }
+  "
+>
+  <div x-ref="navigation" class="carousel splide relative">
+    <div class="splide__arrows hidden md:block">
+      <div class="absolute -left-2 flex h-full items-center md:left-8">
+        <button
+          class="splide__arrow splide__arrow--prev z-10 disabled:hidden {{ section.settings.button_width }} {{ section.settings.button_color }} {{ section.settings.button_style }}"
+          type="button"
+        >
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M11.0303 3.96967C11.3232 4.26256 11.3232 4.73744 11.0303 5.03033L4.81066 11.25H21C21.4142 11.25 21.75 11.5858 21.75 12C21.75 12.4142 21.4142 12.75 21 12.75H4.81066L11.0303 18.9697C11.3232 19.2626 11.3232 19.7374 11.0303 20.0303C10.7374 20.3232 10.2626 20.3232 9.96967 20.0303L2.46967 12.5303C2.17678 12.2374 2.17678 11.7626 2.46967 11.4697L9.96967 3.96967C10.2626 3.67678 10.7374 3.67678 11.0303 3.96967Z" fill="currentColor" />
+          </svg>
+        </button>
+      </div>
+      <div class="absolute -right-2 flex h-full items-center md:right-8">
+        <button
+          class="splide__arrow splide__arrow--next z-10 disabled:hidden {{ section.settings.button_width }} {{ section.settings.button_color }} {{ section.settings.button_style }}"
+          type="button"
+        >
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12.9697 3.96967C13.2626 3.67678 13.7374 3.67678 14.0303 3.96967L21.5303 11.4697C21.671 11.6103 21.75 11.8011 21.75 12C21.75 12.1989 21.671 12.3897 21.5303 12.5303L14.0303 20.0303C13.7374 20.3232 13.2626 20.3232 12.9697 20.0303C12.6768 19.7374 12.6768 19.2626 12.9697 18.9697L19.1893 12.75H3C2.58579 12.75 2.25 12.4142 2.25 12C2.25 11.5858 2.58579 11.25 3 11.25H19.1893L12.9697 5.03033C12.6768 4.73744 12.6768 4.26256 12.9697 3.96967Z" fill="currentColor" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="splide__track">
+      <ul class="splide__list">
+        {{ blocks }}
+      </ul>
+    </div>
+    {% if section.blocks.size > 1 %}
+      <nav class="pagination-dots absolute bottom-12 flex w-full justify-center {{ section.settings.button_color | replace: 'button-icon', 'pagination' }}">
+        {% for block in section.blocks %}
+          <button class="pagination-item-{{ section.id }}">
+            <span class="sr-only">
+              {{- 'common.sr_only.go_to_slider' | t }}
+              {{ forloop.index -}}
+            </span>
+          </button>
+        {% endfor %}
+      </nav>
+    {% endif %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.banner_principal.name",
+  "class": "banner-principal",
+  "blocks": [
+    {
+      "name": "t:sections.banner_principal.blocks.image.name",
+      "type": "image",
+      "settings": [
+        {
+          "id": "image_desktop",
+          "type": "image_picker",
+          "label": "t:common.labels.image.select_desktop"
+        },
+        {
+          "id": "image_mobile",
+          "type": "image_picker",
+          "label": "t:common.labels.image.select_mobile"
+        },
+        {
+          "id": "image_url",
+          "type": "url",
+          "label": "t:common.labels.link.write"
+        }
+      ]
+    },
+    {
+      "name": "t:sections.banner_principal.blocks.video.name",
+      "type": "video",
+      "settings": [
+        {
+          "id": "video_desktop",
+          "type": "video",
+          "label": "t:common.labels.video.select_desktop"
+        },
+        {
+          "id": "video_mobile",
+          "type": "video",
+          "label": "t:common.labels.video.select_mobile"
+        },
+        {
+          "id": "video_url",
+          "type": "url",
+          "label": "t:common.labels.link.write"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.banner_principal.name",
+      "blocks": [
+        {
+          "type": "image"
+        },
+        {
+          "type": "video"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.buttons"
+    },
+    {
+      "id": "button_color",
+      "type": "select",
+      "label": "t:common.labels.buttons.color",
+      "default": "button-icon-primary",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "button-icon-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "button-icon-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "button-icon-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "button-icon-tertiary"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "button-icon-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "button-icon-white"
+        }
+      ]
+    },
+    {
+      "id": "button_width",
+      "type": "radio",
+      "label": "t:common.labels.buttons.size",
+      "default": "w-12 h-12",
+      "options": [
+        {
+          "label": "t:common.sizes.medium",
+          "value": "w-12 h-12"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "w-8 h-8 p-1"
+        }
+      ]
+    },
+    {
+      "id": "button_style",
+      "type": "select",
+      "label": "t:common.labels.buttons.style",
+      "default": "button-icon",
+      "options": [
+        {
+          "label": "t:common.styles.button.solid",
+          "value": "button-icon"
+        },
+        {
+          "label": "t:common.styles.button.outline",
+          "value": "button-icon button-icon-outline"
+        },
+        {
+          "label": "t:common.styles.button.ghost",
+          "value": "button-icon button-icon-ghost"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

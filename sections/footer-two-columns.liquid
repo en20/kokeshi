@@ -1,0 +1,539 @@
+{% liquid 
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+
+  assign enabled_payment_types = ''
+  if settings.visa
+    assign enabled_payment_types = enabled_payment_types | append: 'visa,'
+  endif
+  if settings.master
+    assign enabled_payment_types = enabled_payment_types | append: 'master,'
+  endif
+  if settings.elo
+    assign enabled_payment_types = enabled_payment_types | append: 'elo,'
+  endif
+  if settings.diners_club
+    assign enabled_payment_types = enabled_payment_types | append: 'diners_club,'
+  endif
+  if settings.american_express
+    assign enabled_payment_types = enabled_payment_types | append: 'american_express,'
+  endif
+  if settings.boleto
+    assign enabled_payment_types = enabled_payment_types | append: 'boleto,'
+  endif
+  if settings.pix
+    assign enabled_payment_types = enabled_payment_types | append: 'pix,'
+  endif
+
+  assign enabled_payment_types = enabled_payment_types | split: ','
+%}
+<div class="wrapper flex flex-col gap-8 pb-4 pt-8 md:pb-8 md:pt-12 {{ section.settings.background_color }}">
+  <div class="grid gap-4 md:grid-cols-12">
+    <div class="flex flex-col items-start gap-8 md:col-span-4">
+      {% render 'logo', logo_color: section.settings.logo_color, logo_size: section.settings.logo_size %}
+      <div class="flex flex-col gap-6">
+        <div class="text flex flex-col gap-1 {{ section.settings.text_color }} {{ section.settings.text_size }}">
+          <span>{{ section.settings.cnpj }}</span>
+          <span>{{ section.settings.address }}</span>
+        </div>
+        <div class="text flex flex-col gap-1 {{ section.settings.text_color }} {{ section.settings.text_size }}">
+          <span>{{ section.settings.phone_number }}</span>
+          <span>{{ section.settings.email }}</span>
+        </div>
+        <div class="flex gap-4 {{ section.settings.text_color }}">
+          {% render 'social-media' %}
+        </div>
+      </div>
+      {% if section.settings.show_certifications %}
+        <div class="flex flex-col gap-4 md:flex-row md:items-center">
+          <div class="flex flex-row flex-wrap gap-4">
+            {% for block in section.blocks %}
+              {% if block.type == 'image' and block.settings.image != blank %}
+                {{
+                  block.settings.image
+                  | image_url: width: 200
+                  | image_tag: loading: loading, fetchpriority: fetchpriority, class: 'image h-12 w-fit'
+                }}
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+    <div class="grid gap-4 md:col-span-5 md:grid-cols-2 {{ section.settings.link_size }} {{ section.settings.link_color }}">
+      {% for block in section.blocks %}
+        {% if block.type == 'menu' %}
+          <ul class="flex flex-col gap-6">
+            <li>
+              <h4
+                class="text font-semibold {{ section.settings.text_color }} {{ section.settings.menu_title_size }}"
+              >
+                {{ block.settings.menu.title }}
+              </h4>
+            </li>
+            {% for menu in block.settings.menu.links %}
+              <li class="link font-medium">
+                <a aria-label="{{ menu.title }}" href="{{ menu.url | default: '#' }}">{{ menu.title }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="flex flex-col gap-3 md:col-span-3">
+      <h3 class="text font-serif font-semibold {{ section.settings.menu_title_size }} {{ section.settings.text_color }}">
+        {{ section.settings.newsletter_title }}
+      </h3>
+      <div class="flex flex-col">
+        <form
+          x-data="newsletter"
+          @submit.prevent="subscribe"
+          method="post"
+          action="/contact#contact_form"
+          accept-charset="UTF-8"
+          class="flex flex-col gap-2 xl:flex-row"
+        >
+          <input type="hidden" name="form_type" value="customer">
+          <input type="hidden" name="utf8" value="✓">
+          <input type="hidden" x-model="tags" name="contact[tags]">
+          <input
+            x-model="email"
+            name="contact[email]"
+            type="email"
+            required
+            autocomplete="email"
+            autocorrect="off"
+            autocapitalize="off"
+            placeholder="{{ 'common.placeholder.email' | t }}"
+            class="input md:max-w-60 h-12 w-full border-neutral-300 focus:ring-neutral-300"
+          >
+          <button
+            :disabled="loading"
+            type="submit"
+            class="{{ section.settings.button_color }} {{ section.settings.button_style }} h-12"
+          >
+            {% render 'loading-spinner' %}
+            <span class="ml-2">
+              {{ section.settings.newsletter_button_label }}
+            </span>
+          </button>
+        </form>
+      </div>
+      <div class="text [&>p>a]:underline {{ section.settings.text_color }} {{ section.settings.text_size }}">
+        {{ section.settings.newsletter_description }}
+      </div>
+    </div>
+  </div>
+  <div>
+    <hr class="border-t border-neutral-500">
+    <div class="flex flex-col items-start gap-6 pt-8 text-body-sm md:flex-row md:items-center md:justify-between">
+      {% if section.settings.show_credit_card_flags %}
+        {% assign enabled_payment_types = settings.enabled_payment_types
+          | default: 'visa,master,elo,diners_club,american_express,pix'
+          | remove: ' '
+          | split: ','
+        %}
+        <ul class="flex flex-wrap gap-4">
+          {% for type in enabled_payment_types %}
+            <li class="icon payment-icon">
+              {{ type | payment_type_svg_tag }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      <span class="text {{ section.settings.text_size }}">
+        © {{ 'now' | date: '%Y' }}
+        {{ shop.name }}. {{ 'sections.footer_two_columns.all_rights_reserved' | t }}
+      </span>
+      {% render 'powered-by' %}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "tag": "footer",
+  "name": "t:sections.footer_two_columns.name",
+  "class": "footer-two-columns",
+  "blocks": [
+    {
+      "name": "t:common.headers.image",
+      "type": "image",
+      "settings": [
+        {
+          "id": "image",
+          "type": "image_picker",
+          "label": "t:common.labels.image.select"
+        }
+      ]
+    },
+    {
+      "name": "t:common.headers.menu",
+      "type": "menu",
+      "limit": 2,
+      "settings": [
+        {
+          "id": "menu",
+          "type": "link_list",
+          "label": "t:common.labels.menu.select",
+          "default": "footer"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.footer_two_columns.name",
+      "blocks": [
+        {
+          "type": "menu"
+        },
+        {
+          "type": "menu"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.logo"
+    },
+    {
+      "id": "logo_color",
+      "type": "select",
+      "label": "t:common.labels.logo.color",
+      "default": "primary",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "primary"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "tertiary"
+        },
+        {
+          "label": "t:common.colors.alternative",
+          "value": "alternative"
+        }
+      ]
+    },
+    {
+      "id": "logo_size",
+      "type": "select",
+      "label": "t:common.labels.logo.size",
+      "default": "h-8",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "h-20"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "h-14"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "h-10"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "h-8"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "h-6"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.menu"
+    },
+    {
+      "id": "link_color",
+      "type": "select",
+      "label": "t:common.labels.links.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        }
+      ]
+    },
+    {
+      "id": "link_size",
+      "type": "select",
+      "label": "t:common.labels.links.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "menu_title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-body-lg",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.text"
+    },
+    {
+      "id": "text_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "text_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        }
+      ]
+    },
+    {
+      "id": "cnpj",
+      "type": "text",
+      "label": "t:sections.footer_two_columns.settings.cnpj.label",
+      "default": "00.000.000/0001-23"
+    },
+    {
+      "id": "address",
+      "type": "richtext",
+      "label": "t:sections.footer_two_columns.settings.address.label",
+      "default": "<p>Lorem ipsum, 123 - São Paulo - SP<p>"
+    },
+    {
+      "id": "phone_number",
+      "type": "text",
+      "label": "t:sections.footer_two_columns.settings.phone.label",
+      "default": "0800 123 4567"
+    },
+    {
+      "id": "email",
+      "type": "text",
+      "label": "t:sections.footer_two_columns.settings.email.label",
+      "default": "contact@loremipsum.com.br"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.newsletter"
+    },
+    {
+      "id": "newsletter_title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Lorem ipsum dolor sit amet"
+    },
+    {
+      "id": "newsletter_description",
+      "type": "richtext",
+      "label": "t:common.labels.description.write",
+      "default": "<p>Lorem ipsum dolor sit amet, consectetur</p>"
+    },
+    {
+      "id": "newsletter_button_label",
+      "type": "text",
+      "label": "t:common.labels.button.write",
+      "default": "Assinar"
+    },
+    {
+      "id": "button_color",
+      "type": "select",
+      "label": "t:common.labels.button.color",
+      "default": "button-black",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "button-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "button-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "button-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "button-tertiary"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "button-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "button-white"
+        }
+      ]
+    },
+    {
+      "id": "button_style",
+      "type": "select",
+      "label": "t:common.labels.button.style",
+      "default": "button button-outline",
+      "options": [
+        {
+          "label": "t:common.styles.button.solid",
+          "value": "button"
+        },
+        {
+          "label": "t:common.styles.button.outline",
+          "value": "button button-outline"
+        },
+        {
+          "label": "t:common.styles.button.ghost",
+          "value": "button button-ghost"
+        },
+        {
+          "label": "t:common.styles.button.link",
+          "value": "button button-link"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.content"
+    },
+    {
+      "id": "show_certifications",
+      "type": "checkbox",
+      "label": "t:sections.footer_two_columns.settings.show_certifications.label",
+      "default": true
+    },
+    {
+      "id": "show_credit_card_flags",
+      "type": "checkbox",
+      "label": "t:sections.footer_two_columns.settings.show_credit_card_flags.label",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.background"
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

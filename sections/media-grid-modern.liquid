@@ -1,0 +1,784 @@
+<div class="section {{ section.settings.width }} {{ section.settings.background_color }} flex flex-col gap-8">
+  {% liquid
+    if section.settings.text_alignment == 'right'
+      assign text_alignment = 'items-end text-right'
+    elsif section.settings.text_alignment == 'center'
+      assign text_alignment = 'items-center text-center'
+    else
+      assign text_alignment = 'items-start text-left'
+    endif
+
+    assign loading = 'eager'
+    assign fetchpriority = 'auto'
+    if section.index == 1
+      assign fetchpriority = 'high'
+    elsif section.index > 2
+      assign loading = 'lazy'
+    endif
+  %}
+  <div class="{% if section.settings.width == 'w-full' %}wrapper{% endif %} flex {{ text_alignment }} w-full flex-col gap-8">
+    <div class="lazy-item flex w-full items-center">
+      <div class="flex flex-1 {{ text_alignment }} flex-col gap-2">
+        <h3 class="title {{ section.settings.title_size }} {{ section.settings.title_color }} max-w-2xl font-normal">
+          {{ section.settings.title }}
+        </h3>
+        <span class="subtitle {{ section.settings.subtitle_size }} {{ section.settings.subtitle_color }} max-w-2xl font-normal">
+          {{ section.settings.subtitle }}
+        </span>
+      </div>
+      <div>
+        {% if section.settings.button_position == 'top' %}
+          <a
+            aria_label="{{ section.settings.button_text }}"
+            href="{{ section.settings.button_url | default: '#' }}"
+            class="ml-4 {{ section.settings.button_color }} {{ section.settings.button_style }} {{ section.settings.button_size }}"
+          >
+            {{ section.settings.button_text }}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="hidden md:flex {{ section.settings.card_gap }} flex-row"
+  >
+    {% liquid
+      assign blocks = section.blocks
+      assign blocksSize = blocks | size
+      assign numColumns = section.settings.desktop_columns
+      assign numColumnsInt = numColumns | ceil
+      assign blocksPerColumn = blocksSize | divided_by: numColumns | round
+    %}
+    {% for column in (1..numColumnsInt) %}
+      {% assign columIndex = forloop.index %}
+      <div class="flex w-full flex-col {{ section.settings.card_gap }} ">
+        {% for i in (1..blocksPerColumn) %}
+          {% liquid
+            assign lineIndex = forloop.index
+            assign columnNum = column | minus: 1
+            assign index = columnNum | times: blocksPerColumn | plus: i | minus: 1
+
+            assign restLine = lineIndex | modulo: 2
+            assign restColumn = columIndex | modulo: 2
+
+            if restLine == 0 and restColumn == 0
+              assign aspect_ratio = 'aspect-square'
+            elsif restLine == 1 and restColumn == 1
+              assign aspect_ratio = 'aspect-square'
+            else
+              assign aspect_ratio = 'aspect-[3/4]'
+            endif
+          %}
+          {% if index < blocks.size %}
+            {% assign block = blocks[index] %}
+            {% if block.type == 'video' %}
+              <div
+                x-data="{ shown: false }"
+                x-intersect:enter.half="shown = true"
+                {% if section.settings.section_animation == 'appear_rising' %}
+                  :class="{ 'opacity-100 translate-y-0': shown , 'opacity-0 translate-y-24': !shown }"
+                {% elsif section.settings.section_animation == 'appear' %}
+                  :class="{ 'opacity-100': shown , 'opacity-0': !shown }"
+                {% endif %}
+                class="relative transition-all duration-500"
+              >
+                {% if request.design_mode %}
+                  <span class="absolute left-1 top-1 bg-neutral-100 p-1">#{{ index | plus: 1 }}</span>
+                {% endif %}
+                {%- if section.settings.video_desktop == blank and section.settings.video_mobile == blank -%}
+                  <video
+                    class="video h-full w-full {{ aspect_ratio }} object-cover"
+                    autoplay
+                    playsinline
+                    muted
+                  >
+                    <source src="{{ 'video-placeholder.mp4' | asset_url }}" type="video/mp4">
+                  </video>
+                {%- else -%}
+                  {%- if section.settings.video_desktop != blank -%}
+                    <template x-if="!isMobile">
+                      <video
+                        class="video hidden h-full w-full {{ aspect_ratio }} object-cover md:block"
+                        autoplay
+                        playsinline
+                        muted
+                      >
+                        {% for source in section.settings.video_desktop.sources %}
+                          <source src="{{ source.url }}" type="{{ source.mime_type }}">
+                        {% endfor %}
+                      </video>
+                    </template>
+                  {%- endif -%}
+                  {%- if section.settings.video_mobile != blank -%}
+                    <template x-if="isMobile">
+                      <video
+                        class="video block h-full w-full {{ aspect_ratio }} object-cover md:hidden"
+                        autoplay
+                        playsinline
+                        muted
+                      >
+                        {% for source in section.settings.video_mobile.sources %}
+                          <source src="{{ source.url }}" type="{{ source.mime_type }}">
+                        {% endfor %}
+                      </video>
+                    </template>
+                  {%- endif %}
+                {%- endif -%}
+              </div>
+            {% elsif block.type == 'image' %}
+              <div
+                x-data="{ shown: false }"
+                x-intersect:enter.half="shown = true"
+                {% if section.settings.section_animation == 'appear_rising' %}
+                  :class="{ 'opacity-100 translate-y-0': shown , 'opacity-0 translate-y-24': !shown }"
+                {% elsif section.settings.section_animation == 'appear' %}
+                  :class="{ 'opacity-100': shown , 'opacity-0': !shown }"
+                {% endif %}
+                class="relative transition-all duration-500"
+              >
+                {% if request.design_mode %}
+                  <span class="absolute left-1 top-1 bg-neutral-100 p-1">#{{ index | plus: 1 }}</span>
+                {% endif %}
+                {% if block.settings.image_desktop != blank %}
+                  {% liquid
+                    assign image_class = 'object-cover image h-full w-full transition-transform duration-700 ' | append: aspect_ratio
+                    if block.settings.image_mobile != blank
+                      assign image_desktop_class = image_class | append: ' hidden md:block'
+                      assign image_mobile_class = image_class | append: ' md:hidden'
+                    else
+                      assign image_desktop_class = image_class
+                      assign image_mobile_class = image_class
+                    endif
+                  %}
+                  {{
+                    block.settings.image_desktop
+                    | image_url: width: 960
+                    | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_desktop_class
+                  }}
+                  {% if block.settings.image_mobile != blank %}
+                    {{
+                      block.settings.image_mobile
+                      | image_url: width: 600
+                      | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_mobile_class
+                    }}
+                  {% endif %}
+                {% elsif block.settings.image_mobile == blank %}
+                  <div class="{{ aspect_ratio }} flex items-center justify-center border">
+                    {% render 'image-placeholder', image_class: 'border-none' %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+  <div
+    class="flex {{ section.settings.card_gap }} flex-row md:hidden"
+  >
+    {% liquid
+      assign blocks = section.blocks
+      assign blocksSize = blocks | size
+      assign numColumns = section.settings.mobile_columns
+      assign numColumnsInt = numColumns | ceil
+      assign blocksPerColumn = blocksSize | divided_by: numColumns | round
+    %}
+    {% for column in (1..numColumnsInt) %}
+      {% assign columIndex = forloop.index %}
+      <div class="flex w-full flex-col {{ section.settings.card_gap }} ">
+        {% for i in (1..blocksPerColumn) %}
+          {% liquid
+            assign lineIndex = forloop.index
+            assign columnNum = column | minus: 1
+            assign index = columnNum | times: blocksPerColumn | plus: i | minus: 1
+
+            assign restLine = lineIndex | modulo: 2
+            assign restColumn = columIndex | modulo: 2
+
+            if restLine == 0 and restColumn == 0
+              assign aspect_ratio = 'aspect-square'
+            elsif restLine == 1 and restColumn == 1
+              assign aspect_ratio = 'aspect-square'
+            else
+              assign aspect_ratio = 'aspect-[3/4]'
+            endif
+          %}
+          {% if index < blocks.size %}
+            {% assign block = blocks[index] %}
+            {% if block.type == 'video' %}
+              <div
+                x-data="{ shown: false }"
+                x-intersect:enter.half="shown = true"
+                {% if section.settings.section_animation == 'appear_rising' %}
+                  :class="{ 'opacity-100 translate-y-0': shown , 'opacity-0 translate-y-24': !shown }"
+                {% elsif section.settings.section_animation == 'appear' %}
+                  :class="{ 'opacity-100': shown , 'opacity-0': !shown }"
+                {% endif %}
+                class="relative transition-all duration-500"
+              >
+                {% if request.design_mode %}
+                  <span class="absolute left-1 top-1 bg-neutral-100 p-1">#{{ index | plus: 1 }}</span>
+                {% endif %}
+                {%- if section.settings.video_desktop == blank and section.settings.video_mobile == blank -%}
+                  <video
+                    class="video h-full w-full {{ aspect_ratio }} object-cover"
+                    autoplay
+                    playsinline
+                    muted
+                  >
+                    <source src="{{ 'video-placeholder.mp4' | asset_url }}" type="video/mp4">
+                  </video>
+                {%- else -%}
+                  {%- if section.settings.video_desktop != blank -%}
+                    <template x-if="!isMobile">
+                      <video
+                        class="video hidden h-full w-full {{ aspect_ratio }} object-cover md:block"
+                        autoplay
+                        playsinline
+                        muted
+                      >
+                        {% for source in section.settings.video_desktop.sources %}
+                          <source src="{{ source.url }}" type="{{ source.mime_type }}">
+                        {% endfor %}
+                      </video>
+                    </template>
+                  {%- endif -%}
+                  {%- if section.settings.video_mobile != blank -%}
+                    <template x-if="isMobile">
+                      <video
+                        class="video block h-full w-full {{ aspect_ratio }} object-cover md:hidden"
+                        autoplay
+                        playsinline
+                        muted
+                      >
+                        {% for source in section.settings.video_mobile.sources %}
+                          <source src="{{ source.url }}" type="{{ source.mime_type }}">
+                        {% endfor %}
+                      </video>
+                    </template>
+                  {%- endif %}
+                {%- endif -%}
+              </div>
+            {% elsif block.type == 'image' %}
+              <div
+                x-data="{ shown: false }"
+                x-intersect:enter.half="shown = true"
+                {% if section.settings.section_animation == 'appear_rising' %}
+                  :class="{ 'opacity-100 translate-y-0': shown , 'opacity-0 translate-y-24': !shown }"
+                {% elsif section.settings.section_animation == 'appear' %}
+                  :class="{ 'opacity-100': shown , 'opacity-0': !shown }"
+                {% endif %}
+                class="relative transition-all duration-500"
+              >
+                {% if request.design_mode %}
+                  <span class="absolute left-1 top-1 bg-neutral-100 p-1">#{{ index | plus: 1 }}</span>
+                {% endif %}
+                {% if block.settings.image_desktop != blank %}
+                  {% liquid
+                    assign image_class = 'object-cover image h-full w-full transition-transform duration-700 ' | append: aspect_ratio
+                    if block.settings.image_mobile != blank
+                      assign image_desktop_class = image_class | append: ' hidden md:block'
+                      assign image_mobile_class = image_class | append: ' md:hidden'
+                    else
+                      assign image_desktop_class = image_class
+                      assign image_mobile_class = image_class
+                    endif
+                  %}
+                  {{
+                    block.settings.image_desktop
+                    | image_url: width: 960
+                    | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_desktop_class
+                  }}
+                  {% if block.settings.image_mobile != blank %}
+                    {{
+                      block.settings.image_mobile
+                      | image_url: width: 600
+                      | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_mobile_class
+                    }}
+                  {% endif %}
+                {% elsif block.settings.image_mobile == blank %}
+                  <div class="{{ aspect_ratio }} flex items-center justify-center border">
+                    {% render 'image-placeholder', image_class: 'border-none' %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+  {% if section.settings.button_position == 'bottom' %}
+    <a
+      aria_label="{{ section.settings.button_text }}"
+      href="{{ section.settings.button_url | default: '#' }}"
+      class="w-fit self-center {{ section.settings.button_color }} {{ section.settings.button_style }} {{ section.settings.button_size }}"
+    >
+      {{ section.settings.button_text }}
+    </a>
+  {% endif %}
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.media_grid_modern.name",
+  "class": "media-grid-modern",
+  "blocks": [
+    {
+      "name": "t:common.headers.image",
+      "type": "image",
+      "settings": [
+        {
+          "id": "image_desktop",
+          "type": "image_picker",
+          "label": "t:common.labels.image.select_desktop"
+        },
+        {
+          "id": "image_mobile",
+          "type": "image_picker",
+          "label": "t:common.labels.image.select_mobile"
+        },
+        {
+          "id": "url",
+          "type": "url",
+          "label": "t:common.labels.link.select"
+        }
+      ]
+    },
+    {
+      "name": "t:sections.banner_principal.blocks.video.name",
+      "type": "video",
+      "settings": [
+        {
+          "id": "video_desktop",
+          "type": "video",
+          "label": "t:common.labels.video.select_desktop"
+        },
+        {
+          "id": "video_mobile",
+          "type": "video",
+          "label": "t:common.labels.video.select_mobile"
+        },
+        {
+          "id": "video_url",
+          "type": "url",
+          "label": "t:common.labels.link.write"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.media_grid_modern.name",
+      "blocks": [
+        {
+          "type": "image"
+        },
+        {
+          "type": "video"
+        },
+        {
+          "type": "image"
+        },
+        {
+          "type": "video"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.title"
+    },
+    {
+      "id": "title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h4 md:text-h3",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h2 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h2"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h5 md:text-h4"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Lorem ipsum dolor sit amet"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.subtitle"
+    },
+    {
+      "id": "subtitle_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "subtitle_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-lg",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h3"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h5"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "subtitle",
+      "type": "richtext",
+      "label": "t:common.labels.text.write",
+      "default": "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.</p>"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.button"
+    },
+    {
+      "id": "button_color",
+      "type": "select",
+      "label": "t:common.labels.button.color",
+      "default": "button-primary",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "button-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "button-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "button-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "button-tertiary"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "button-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "button-white"
+        }
+      ]
+    },
+    {
+      "id": "button_size",
+      "type": "radio",
+      "label": "t:common.labels.button.size",
+      "default": "py-4",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "py-6"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "py-4"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "py-2"
+        }
+      ]
+    },
+    {
+      "id": "button_style",
+      "type": "select",
+      "label": "t:common.labels.button.style",
+      "default": "button button-outline",
+      "options": [
+        {
+          "label": "t:common.styles.button.solid",
+          "value": "button"
+        },
+        {
+          "label": "t:common.styles.button.outline",
+          "value": "button button-outline"
+        },
+        {
+          "label": "t:common.styles.button.ghost",
+          "value": "button button-ghost"
+        }
+      ]
+    },
+    {
+      "id": "button_text",
+      "type": "text",
+      "label": "t:common.labels.button.write",
+      "default": "Lorem ipsum"
+    },
+    {
+      "id": "button_url",
+      "type": "url",
+      "label": "t:common.labels.link.write"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.position"
+    },
+    {
+      "id": "button_position",
+      "type": "select",
+      "label": "t:common.labels.button.position",
+      "default": "bottom",
+      "options": [
+        {
+          "label": "t:common.alignments.top",
+          "value": "top"
+        },
+        {
+          "label": "t:common.alignments.bottom",
+          "value": "bottom"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.cards"
+    },
+    {
+      "id": "section_animation",
+      "type": "radio",
+      "label": "t:common.labels.animation.select_behavior",
+      "default": "appear",
+      "options": [
+        {
+          "label": "t:common.animation.appear",
+          "value": "appear"
+        },
+        {
+          "label": "t:common.animation.appear_rising",
+          "value": "appear_rising"
+        },
+        {
+          "label": "t:common.animation.none",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.section_layout"
+    },
+    {
+      "id": "width",
+      "type": "select",
+      "label": "t:common.labels.width.select",
+      "default": "w-full",
+      "options": [
+        {
+          "label": "t:common.sizes.default",
+          "value": "wrapper"
+        },
+        {
+          "label": "t:common.sizes.all_page",
+          "value": "w-full"
+        }
+      ]
+    },
+    {
+      "id": "card_gap",
+      "type": "select",
+      "label": "t:common.labels.cards.spacing_between",
+      "default": "gap-4",
+      "options": [
+        {
+          "label": "t:common.spacing.default",
+          "value": "gap-4"
+        },
+        {
+          "label": "t:common.spacing.none",
+          "value": "gap-0"
+        }
+      ]
+    },
+    {
+      "id": "desktop_columns",
+      "type": "radio",
+      "label": "t:common.labels.cards.quantity_desktop",
+      "default": "4.0",
+      "options": [
+        {
+          "label": "t:common.options.cards.four",
+          "value": "4.0"
+        },
+        {
+          "label": "t:common.options.cards.three",
+          "value": "3.0"
+        }
+      ]
+    },
+    {
+      "id": "mobile_columns",
+      "type": "radio",
+      "label": "t:common.labels.cards.quantity_mobile",
+      "default": "2.0",
+      "options": [
+        {
+          "label": "t:common.options.cards.two",
+          "value": "2.0"
+        },
+        {
+          "label": "t:common.options.cards.one",
+          "value": "1.0"
+        }
+      ]
+    },
+    {
+      "id": "text_alignment",
+      "type": "text_alignment",
+      "label": "t:common.labels.text.alignment",
+      "default": "left"
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

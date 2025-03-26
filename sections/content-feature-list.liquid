@@ -1,0 +1,429 @@
+{% liquid
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+%}
+<div class="wrapper section flex flex-col gap-8 {{ section.settings.background_color }}">
+  <div class="flex flex-col gap-2 text-center">
+    {% assign title_tag = section.settings.title_tag %}
+    <{{ title_tag }} class="title font-serif font-bold {{ section.settings.title_size }} {{ section.settings.title_color }}">
+      {{ section.settings.title }}
+    </{{ title_tag }}>
+    <span class="description {{ section.settings.description_size }} {{ section.settings.description_color }}">
+      {{ section.settings.description }}
+    </span>
+  </div>
+  <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
+    {% for block in section.blocks %}
+      <div class="flex flex-col gap-4 text-center">
+        <div class="flex items-center justify-center {{ block.settings.title_color }}">
+          {% if block.settings.icon == blank %}
+            <svg class="item-icon icon h-14 w-14" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12.8779 1.60217C12.6444 1.46594 12.3556 1.46594 12.1221 1.60217L3.5 6.63172L12.5 11.8817L21.5 6.63172L12.8779 1.60217Z" fill="currentColor"/>
+              <path d="M22.25 7.93078L13.25 13.1808V22.1808L21.8779 17.1478C22.1083 17.0134 22.25 16.7668 22.25 16.5V7.93078Z" fill="currentColor"/>
+              <path d="M11.75 22.1808V13.1808L2.75 7.93078V16.5C2.75 16.7668 2.89168 17.0134 3.1221 17.1478L11.75 22.1808Z" fill="currentColor"/>
+            </svg>
+          {% else %}
+            {{
+              block.settings.icon
+              | image_url: width: 960
+              | image_tag: loading: loading, fetchpriority: fetchpriority, class: 'item-icon icon w-14 h-14'
+            }}
+          {% endif %}
+        </div>
+        <div class="flex flex-col justify-center">
+          {% if block.settings.title != blank %}
+            <div class="item-text {{ section.settings.title_size }} {{ section.settings.title_color }}">
+              {{ block.settings.title }}
+            </div>
+          {% endif %}
+          {% if block.settings.text != blank %}
+            <div class="item-text {{ section.settings.text_size }} {{ section.settings.text_color }}">
+              {{ block.settings.text }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% if section.settings.button_text != blank %}
+  <div class="flex items-center justify-center">
+    <a
+      aria-label="{{ section.settings.button_text }}"
+      class="{{ section.settings.button_type }} {{ section.settings.button_color }}"
+      href="{{ section.settings.button_url | default: '#' }}"
+    >
+      {{ section.settings.button_text }}
+    </a>
+  </div>
+{% endif %}
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "Conteúdo de destaques",
+  "class": "content-feature-list",
+  "blocks": [
+    {
+      "name": "t:common.headers.item",
+      "type": "item",
+      "settings": [
+        {
+          "type": "header",
+          "content": "t:common.headers.icon"
+        },
+        {
+          "id": "icon",
+          "type": "image_picker",
+          "label": "t:common.labels.icon.select"
+        },
+        {
+          "type": "header",
+          "content": "t:common.headers.text"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título"
+        },
+        {
+          "id": "text",
+          "type": "richtext",
+          "label": "t:common.labels.text.write",
+          "default": "<p>Estilo atemporal, perfeito para qualquer ocasião.</p>"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Conteúdo de destaques",
+      "blocks": [
+        {
+          "type": "item"
+        },
+        {
+          "type": "item"
+        },
+        {
+          "type": "item"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.title"
+    },
+    {
+      "id": "title_tag",
+      "type": "select",
+      "label": "t:common.labels.title.tag",
+      "default": "h2",
+      "options": [
+        {
+          "label": "t:common.headings.h1",
+          "value": "h1"
+        },
+        {
+          "label": "t:common.headings.h2",
+          "value": "h2"
+        },
+        {
+          "label": "t:common.headings.h3",
+          "value": "h3"
+        },
+        {
+          "label": "t:common.headings.h4",
+          "value": "h4"
+        },
+        {
+          "label": "t:common.headings.h5",
+          "value": "h5"
+        },
+        {
+          "label": "t:common.headings.h6",
+          "value": "h6"
+        }
+      ]
+    },
+    {
+      "id": "title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h6 md:text-h5",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "id": "title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Título aqui"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.subtitle"
+    },
+    {
+      "id": "description_size",
+      "type": "select",
+      "label": "t:common.labels.subtitle.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "description_color",
+      "type": "select",
+      "label": "t:common.labels.subtitle.color",
+      "default": "text-neutral-600",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        }
+      ]
+    },
+    {
+      "id": "description",
+      "type": "richtext",
+      "label": "t:common.labels.subtitle.write",
+      "default": "<p>Aqui você encontrará um ambiente amigável e informativo, repleto de conhecimento e inspiração. Nossos conteúdos abrangem uma variedade de tópicos interessantes, desde ciência e tecnologia até arte e cultura. Nossa missão é fornecer informações relevantes e cativantes para enriquecer sua experiência.</p>"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.text"
+    },
+    {
+      "id": "text_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "text_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-neutral-600",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.button"
+    },
+    {
+      "id": "button_type",
+      "type": "select",
+      "label": "t:common.labels.button.style",
+      "default": "button button-outline",
+      "options": [
+        {
+          "label": "t:common.styles.button.solid",
+          "value": "button"
+        },
+        {
+          "label": "t:common.styles.button.outline",
+          "value": "button button-outline"
+        },
+        {
+          "label": "t:common.styles.button.link",
+          "value": "button button-link"
+        }
+      ]
+    },
+    {
+      "id": "button_color",
+      "type": "select",
+      "label": "t:common.labels.button.color",
+      "default": "button-black",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "button-white"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "button-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "button-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "button-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "button-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "button-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "button_text",
+      "type": "text",
+      "label": "t:common.labels.button.write",
+      "default": "Botão"
+    },
+    {
+      "id": "button_url",
+      "type": "url",
+      "label": "t:common.labels.link.select"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.background"
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

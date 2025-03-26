@@ -1,0 +1,17 @@
+{% if settings.banner_placeholder != blank %}
+  {{
+    settings.banner_placeholder
+    | image_url: width: 2048
+    | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_class
+  }}
+{% else %}
+  {% liquid
+    assign min = 1
+    assign max = 3
+    assign diff = max | minus: min
+    assign randomNumber = 'now' | date: '%N' | modulo: diff | plus: min
+    assign bannerSvg = 'lifestyle-' | append: randomNumber
+    assign image_class = image_class | append: ' border bg-neutral-300'
+  %}
+  {{ bannerSvg | placeholder_svg_tag: image_class }}
+{% endif %}

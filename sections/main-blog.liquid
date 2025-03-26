@@ -1,0 +1,190 @@
+{% liquid
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+%}
+<div
+  x-data="
+    {
+      articlePage: 1,
+      loading: false,
+      showMore(){
+        this.loading = true;
+        currentUrl = window.location.href;
+        fetch(currentUrl + `?page=` + (this.articlePage+1)).then(response => {
+          if (response.status !== 200) {
+            throw new Error(response.statusText)
+          } else {
+            return response.text()
+          }
+        }).then(cartData => {
+          const articles = new DOMParser().parseFromString(cartData, 'text/html').getElementById('article-container-{{ section.id }}')
+          const ul = document.getElementById('article-container-{{ section.id }}')
+
+          const articleCards = Array.from(articles.children)
+
+          articleCards.forEach((article) => ul.appendChild(article))
+
+          this.articlePage = this.articlePage + 1
+          this.loading = false
+        })
+        .catch((error) => {
+          console.error(error)
+          this.loading = false
+        })
+      }
+    }
+  "
+  class="section wrapper"
+>
+  <div
+    x-cloak
+    x-show="loading"
+    class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/40 pt-0 text-white"
+  >
+    {% render 'loading-spinner' %}
+  </div>
+  <div class="flex items-end justify-between">
+    <div class="flex-1">
+      <h2 class="blog-title mt-4 font-serif text-h4 font-bold md:mt-6 md:text-h3">{{ blog.title }}</h2>
+      <p class="blog-description mt-4">{{ section.settings.description }}</p>
+    </div>
+  </div>
+  <div class="section">
+    <hr class="border-t border-black">
+  </div>
+  {% if blog.all_tags.any? %}
+    <div class="flex gap-2 overflow-y-hidden md:justify-center">
+      <a
+        aria-label="{{- 'sections.main_blog.see_all' | t -}}"
+        href="{{ blog.url | default: '#' }}"
+        class="article-tag button button-outline button-accent whitespace-nowrap"
+      >
+        {{- 'sections.main_blog.see_all' | t -}}
+      </a>
+      {% for tag in blog.all_tags %}
+        <a
+          aria-label="{{ tag }}"
+          href="{{ blog.url }}/tagged/{{ tag | handleize }}"
+          class="article-tag button button-link button-accent whitespace-nowrap"
+        >
+          {{ tag }}
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% assign featured_article = blog.articles.first %}
+  {% if featured_article %}
+    <div class="lazy-item section flex flex-col items-center gap-6 md:flex-row md:gap-14">
+      {% if featured_article.image %}
+        <a
+          aria-label="{{ 'common.aria_label.image' | t }}"
+          href="{{ featured_article.url | default: '#' }}"
+          class="basis-1/2"
+        >
+          <div class="flex-1">
+            {{
+              featured_article.image
+              | image_url: width: 600
+              | image_tag:
+                loading: loading,
+                fetchpriority: fetchpriority,
+                class: 'image article-image w-full object-cover object-center md:h-[37.5rem]'
+            }}
+          </div>
+        </a>
+      {% endif %}
+      <div class="flex flex-1 flex-col">
+        <span class="article-tag text-body-base font-semibold">{{ featured_article.tags.first }}</span>
+        <a aria-label="{{ featured_article.title }}" href="{{ featured_article.url | default: '#' }}">
+          <h3 class="article-title mt-2 font-serif text-h3 font-bold md:text-h2">{{ featured_article.title }}</h3>
+        </a>
+        {% if featured_article.excerpt != blank %}
+          <p class="article-description mt-4 truncate whitespace-normal md:mt-8">
+            {{ featured_article.excerpt }}
+          </p>
+        {% endif %}
+        <div class="mt-4 md:mt-8">
+          {% render 'article-data', article: featured_article %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% paginate blog.articles by 24 %}
+    {% assign pages_size = paginate.pages %}
+    <div id="article-container-{{ section.id }}" class="grid gap-x-8 gap-y-8 md:grid-cols-3 md:gap-y-12">
+      {% for article in blog.articles %}
+        {% if article.id != featured_article.id %}
+          <div class="flex flex-col">
+            {% if article.image %}
+              <a aria-label="{{ 'common.aria_label.image' | t }}" href="{{ article.url | default: '#' }}">
+                {{
+                  article.image
+                  | image_url: width: 600
+                  | image_tag:
+                    loading: loading,
+                    fetchpriority: fetchpriority,
+                    class: 'image article-image h-[18rem] w-full object-cover object-center'
+                }}
+              </a>
+            {% endif %}
+            <span class="article-tag mt-4 text-body-sm font-semibold">{{ article.tags.first }}</span>
+            <a aria-label="{{ article.title }}" href="{{ article.url | default: '#' }}">
+              <h3 class="article-title mt-2 font-serif text-h6 font-bold">{{ article.title }}</h3>
+            </a>
+            {% if article.excerpt != blank %}
+              <p class="article-description truncate md:mt-4">
+                {{ article.excerpt }}
+              </p>
+            {% endif %}
+            <div class="md:mt-8">
+              {% render 'article-data', article: article %}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% if settings.main_paginate_style == 'view_more' %}
+      <div class="mt-12 flex w-full items-center justify-center">
+        <button
+          class="button button-outline"
+          @click="showMore"
+          :class="articlePage != {{ pages_size }} || 'hidden'"
+        >
+          {{ 'sections.main_search.view_more' | t }}
+        </button>
+      </div>
+    {% else %}
+      <div class="mx-auto mt-4 flex max-w-md flex-col gap-y-4">
+        {% render 'paginate', paginate: paginate, position: 'center' %}
+      </div>
+    {% endif %}
+  {% endpaginate %}
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.main_blog.name",
+  "class": "blog",
+  "settings": [
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Lorem ipsum"
+    },
+    {
+      "id": "description",
+      "type": "text",
+      "label": "t:common.labels.description.write",
+      "default": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+    }
+  ]
+}
+{% endschema %}

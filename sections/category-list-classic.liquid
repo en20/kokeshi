@@ -1,0 +1,328 @@
+{% style %}
+  /* For Webkit-based browsers (Chrome, Safari and Opera) */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* For IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+{% endstyle %}
+
+<div class="wrapper section flex flex-col items-center justify-center gap-8 {{ section.settings.background_color }}">
+  <div class="flex w-full flex-col gap-2 {{ section.settings.horizontal_position }}">
+    <h2 class="title font-serif font-bold md:w-2/3 {{ section.settings.title_size }} {{ section.settings.title_color }}">
+      {{ section.settings.title }}
+    </h2>
+    <span class="description md:w-2/3 {{ section.settings.text_size }} {{ section.settings.text_color }}">
+      {{ section.settings.text }}
+    </span>
+  </div>
+
+  <div class="scrollbar-hide flex w-full overflow-x-auto">
+    <div class="mx-auto flex gap-4">
+      {% for category in section.settings.collection_list %}
+        <button
+          class="whitespace-nowrap {{ section.settings.button_style }} {{ section.settings.button_color }}"
+          type="button"
+        >
+          {{ category.title }}
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.category_list_classic.name",
+  "class": "category-list-classic",
+  "presets": [
+    {
+      "name": "t:sections.category_list_classic.name"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.section_style"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.title"
+    },
+    {
+      "id": "title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h4 md:text-h3",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h2 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h2"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h5 md:text-h4"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Our collections"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.text"
+    },
+    {
+      "id": "text_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-neutral-600",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "text_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "text",
+      "type": "richtext",
+      "label": "t:common.labels.text.write",
+      "default": "<p>Aqui você encontrará um ambiente amigável e informativo, repleto de conhecimento e inspiração.</p>"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.position"
+    },
+    {
+      "id": "horizontal_position",
+      "type": "select",
+      "label": "t:common.labels.position.horizontal",
+      "default": "items-center text-center",
+      "options": [
+        {
+          "label": "t:common.alignments.left",
+          "value": "items-start text-left"
+        },
+        {
+          "label": "t:common.alignments.center",
+          "value": "items-center text-center"
+        },
+        {
+          "label": "t:common.alignments.right",
+          "value": "items-end text-right"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.background"
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.collection_style"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.buttons"
+    },
+    {
+      "id": "button_color",
+      "type": "select",
+      "label": "t:common.labels.buttons.color",
+      "default": "button-primary",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "button-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "button-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "button-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "button-tertiary"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "button-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "button-white"
+        }
+      ]
+    },
+    {
+      "id": "button_style",
+      "type": "select",
+      "label": "t:common.labels.buttons.style",
+      "default": "button button-ghost",
+      "options": [
+        {
+          "label": "t:common.styles.button.solid",
+          "value": "button"
+        },
+        {
+          "label": "t:common.styles.button.outline",
+          "value": "button button-outline"
+        },
+        {
+          "label": "t:common.styles.button.ghost",
+          "value": "button button-ghost"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.content"
+    },
+    {
+      "id": "collection_list",
+      "type": "collection_list",
+      "label": "t:common.labels.collection.select"
+    }
+  ]
+}
+{% endschema %}

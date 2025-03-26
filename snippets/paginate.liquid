@@ -1,0 +1,73 @@
+{%- if paginate.pages > 1 -%}
+  {%- if paginate.parts.size > 0 -%}
+    <div class="lazy-item flex items-center justify-between py-3">
+      <div class="flex flex-1 justify-between gap-x-2 sm:hidden">
+        {%- if paginate.previous -%}
+          <a
+            href="{{ paginate.previous.url }}"
+            class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >Anterior</a
+          >
+        {%- endif -%}
+        {%- if paginate.next -%}
+          <a
+            href="{{ paginate.next.url }}"
+            class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >Próximo</a
+          >
+        {%- endif -%}
+      </div>
+      <div class="hidden {% if position == 'center' %}sm:justify-center{% elsif position == 'right' %}sm:justify-end{% endif %} sm:flex sm:flex-1 sm:items-center">
+        <nav class="isolate flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+          <a
+            href="{{ paginate.previous.url }}"
+            class="relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20"
+          >
+            <span class="sr-only">Anterior</span>
+            <div class="h-4 w-4">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M11.0303 3.96967C11.3232 4.26256 11.3232 4.73744 11.0303 5.03033L4.81066 11.25H21C21.4142 11.25 21.75 11.5858 21.75 12C21.75 12.4142 21.4142 12.75 21 12.75H4.81066L11.0303 18.9697C11.3232 19.2626 11.3232 19.7374 11.0303 20.0303C10.7374 20.3232 10.2626 20.3232 9.96967 20.0303L2.46967 12.5303C2.17678 12.2374 2.17678 11.7626 2.46967 11.4697L9.96967 3.96967C10.2626 3.67678 10.7374 3.67678 11.0303 3.96967Z" fill="currentColor" />
+              </svg>
+            </div>
+          </a>
+          {%- for part in paginate.parts -%}
+            {%- if part.is_link -%}
+              <a
+                href="{{ part.url }}"
+                aria-label="{{- part.title -}}"
+                class="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20"
+              >
+                {{- part.title -}}
+              </a>
+            {%- else -%}
+              {%- if part.title == paginate.current_page -%}
+                <span
+                  aria-current="page"
+                  aria-label="{{- part.title -}}"
+                  class="relative z-10 inline-flex items-center border border-accent bg-indigo-50 px-4 py-2 text-sm font-medium text-accent focus:z-20"
+                >
+                  {{- part.title -}}
+                </span>
+              {%- else -%}
+                <span class="relative inline-flex items-center border bg-white px-4 py-2 text-sm font-medium text-gray-500">
+                  {{- part.title -}}
+                </span>
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          <a
+            href="{{ paginate.next.url }}"
+            class="relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-20"
+          >
+            <span class="sr-only">Próximo</span>
+            <div class="h-4 w-4">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12.9697 3.96967C13.2626 3.67678 13.7374 3.67678 14.0303 3.96967L21.5303 11.4697C21.671 11.6103 21.75 11.8011 21.75 12C21.75 12.1989 21.671 12.3897 21.5303 12.5303L14.0303 20.0303C13.7374 20.3232 13.2626 20.3232 12.9697 20.0303C12.6768 19.7374 12.6768 19.2626 12.9697 18.9697L19.1893 12.75H3C2.58579 12.75 2.25 12.4142 2.25 12C2.25 11.5858 2.58579 11.25 3 11.25H19.1893L12.9697 5.03033C12.6768 4.73744 12.6768 4.26256 12.9697 3.96967Z" fill="currentColor" />
+              </svg>
+            </div>
+          </a>
+        </nav>
+      </div>
+    </div>
+  {%- endif -%}
+{%- endif -%}

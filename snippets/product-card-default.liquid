@@ -1,0 +1,136 @@
+{% liquid
+  assign product_featured_image = product.featured_image | image_url
+
+  if product_featured_image == blank
+    if settings.product_placeholder != blank
+      assign product_featured_image = settings.product_placeholder | image_url
+    endif
+  endif
+  assign loading = 'eager'
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  elsif section.index > 2
+    assign loading = 'lazy'
+  endif
+  assign image_class = 'product-image image h-full w-full object-cover object-center '
+  if section.settings.image_ratio != blank
+    assign image_class = image_class | append: section.settings.image_ratio
+  elsif settings.product_card_image_ratio != blank
+    assign image_class = image_class | append: settings.product_card_image_ratio
+  endif
+%}
+<div
+  {% if section.settings.button_action == 'go-to-product' %}
+    @click="window.location.href='{{ product.selected_or_first_available_variant.url | default: product.url }}'"
+    :class="
+      {
+        'cursor-pointer': true
+      }
+    "
+  {% endif %}
+  class="product-card card relative flex h-full flex-col justify-between overflow-hidden {{ settings.card_bg_color }} {{ settings.box_border_radius }} {% if settings.show_border == true %} {{ settings.box_border_size }} {% else %} border-none {% endif %} {{ settings.box_border_color }}"
+>
+  <div>
+    <div class="lazy-item w-full">
+      <a
+        aria-label="{{ 'common.aria_label.product_image' | t }}"
+        href="{{ product.selected_or_first_available_variant.url | default: product.url }}"
+      >
+        {% assign product_alt = product.featured_image.alt | default: product.title | escape %}
+        {% if product_featured_image != blank %}
+          {{
+            product_featured_image
+            | image_url: width: 600
+            | image_tag: loading: loading, fetchpriority: fetchpriority, class: image_class
+          }}
+        {% else %}
+          {% render 'product-placeholder', image_class: image_class %}
+        {% endif %}
+      </a>
+    </div>
+    <div class="mt-4 flex flex-col gap-1">
+      <a
+        aria-label="{{ product.title }}"
+        href="{{ product.selected_or_first_available_variant.url | default: product.url }}"
+      >
+        <span class="product-title font-bold {{ settings.title_color }} {{ settings.title_size }}">
+          {{- product.title -}}
+        </span>
+      </a>
+      <p class="{{ settings.text_color }} product-variant-title {{ settings.text_size }}">
+        {{ product.selected_or_first_available_variant.title }}
+      </p>
+      {% if product.selected_or_first_available_variant.compare_at_price
+          > product.selected_or_first_available_variant.price
+      %}
+        <p class="compare-at-price line-through {{ settings.text_color }} {{ settings.text_size }}">
+          {{ product.selected_or_first_available_variant.compare_at_price | money }}
+        </p>
+      {% endif %}
+      <p class="price font-semibold {{ settings.price_color }} {{ settings.price_size }}">
+        {{ product.selected_or_first_available_variant.price | money }}
+      </p>
+    </div>
+  </div>
+  <div
+    x-data="
+      {
+        loading: false,
+        handleAdd() {
+          this.loading = true
+
+          const items = [{ id: '{{ product.selected_or_first_available_variant.id }}', quantity: 1 }]
+
+          $store.cart.addItems(items)
+          .then(response => {
+            this.loading = false
+
+            {% if settings.cart_type != 'side' %}
+              $dispatch('show-notification', { type: 'success', title: '{{ 'common.notification.cart' | t }}', description: '{{ 'common.notification.add_success' | t }}' })
+            {% endif %}
+
+            $dispatch('cart-change')
+
+            $store.cart.fetchItems()
+
+            Log('Add to Cart:', response)
+          });
+        }
+      }
+    "
+    class="mt-6"
+  >
+    {% liquid
+      assign button_class = ''
+
+      if product.available
+        assign button_class = settings.buy_button_color | append: ' ' | append: settings.buy_button_style | append: ' ' | append: settings.buy_button_size
+      else
+        assign button_class = 'button border-gray-400 bg-gray-300 text-gray-400'
+      endif
+    %}
+    <button
+      {% if product.available %}
+        {% if section.settings.button_action != 'go-to-product' %}
+          @click="handleAdd()"
+        {% endif %}
+        :disabled="loading"
+      {% else %}
+        disabled
+      {% endif %}
+      class="w-full {{ button_class }}"
+    >
+      {% render 'loading-spinner' %}
+      <div x-show="!loading">
+        {% if product.available %}
+          {% assign text_buy_button = 'snippets.product_card.buy' | t %}
+          {{ section.settings.product_button_text | default: settings.buy_button_label | default: text_buy_button }}
+        {% else %}
+          {{ 'common.sold_out' | t }}
+        {% endif %}
+        <span class="sr-only">{{ product.title }}</span>
+      </div>
+    </button>
+  </div>
+</div>

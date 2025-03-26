@@ -1,0 +1,468 @@
+{% liquid
+  if request.page_type == 'collection'
+    assign selected_collection = collection
+  else
+    assign selected_collection = collections.all
+  endif
+
+  if request.page_type == 'collection'
+    assign search_filter = collection
+    assign search_url = collection.url
+  else
+    assign search_filter = null
+    assign search_url = null
+  endif
+%}
+
+<div
+  x-data="
+    {
+      open: false,
+      productPage: 1,
+      loading: false,
+      showMore(){
+        this.loading = true;
+        fetch(`/collections/{{ selected_collection.handle }}?page=`+(this.productPage + 1))
+        .then(response => {
+          if(response.status !== 200) {
+            throw new Error(response.statusText)
+          } else {
+            return response.text()
+          }
+        })
+        .then(cartData => {
+          const id = 'products-container-{{ section.id }}'
+          const products = new DOMParser().parseFromString(cartData, 'text/html').getElementById(id);
+          const ul = document.getElementById(id);
+
+          const productCards = Array.from(products.children);
+
+          productCards.forEach((product) => {
+            ul.appendChild(product);
+          });
+
+          this.productPage = this.productPage + 1;
+          this.loading = false;
+        })
+        .catch((error) => {
+          console.error(error);
+          this.loading = false;
+        });
+      }
+    }
+  "
+  class="section wrapper flex flex-col items-center gap-8 {{ section.settings.background_color }}"
+>
+  <div
+    x-cloak
+    x-show="loading"
+    class="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/40 pt-0 text-white"
+  >
+    {% render 'loading-spinner' %}
+  </div>
+  <div class="flex w-full items-start justify-between gap-6 md:items-center">
+    <div class="flex w-full flex-col gap-2 {{ section.settings.text_position }}">
+      {% if section.settings.title != blank %}
+        <h2 class="title font-serif font-bold md:w-2/3 {{ section.settings.title_size }} {{ section.settings.title_color }}">
+          {{ section.settings.title }}
+        </h2>
+      {% endif %}
+      {% if section.settings.text != blank %}
+        <div class="description md:w-2/3 {{ section.settings.text_color }} {{ section.settings.text_size }}">
+          {{ section.settings.text }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% if search_filter != blank or search_url != blank %}
+    <div class="w-full">
+      {% render 'filter', search: search_filter, url: search_url %}
+    </div>
+  {% endif %}
+  <div
+    id="products-container-{{ section.id }}"
+    class="lazy-item product-grid grid gap-x-2 gap-y-6 md:gap-8 {{ section.settings.mobile_column_quantity }} {{ section.settings.desktop_column_quantity }}"
+  >
+    {% paginate selected_collection.products by 48 %}
+      {% assign pages_size = paginate.pages %}
+      {% for product in selected_collection.products %}
+        {% render 'product-card', product: product %}
+      {% endfor %}
+    {% endpaginate %}
+  </div>
+  <button
+    aria-label="{{- section.settings.button_text -}}"
+    x-cloak
+    type="button"
+    @click="showMore"
+    :class="productPage != {{ pages_size }} || 'hidden'"
+    class="cursor-pointer whitespace-nowrap {{ section.settings.button_color }} {{ section.settings.button_style }} {{ section.settings.button_size }}"
+  >
+    {{- section.settings.button_text -}}
+  </button>
+</div>
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.product_filter_simple.name",
+  "class": "product-filter-simple",
+  "presets": [
+    {
+      "name": "t:sections.product_filter_simple.name"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.section_style"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.title"
+    },
+    {
+      "id": "title_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "title_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h4 md:text-h3",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h2 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h2"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h5 md:text-h4"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Lorem ipsum dolor sit amet"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.text"
+    },
+    {
+      "id": "text_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "text_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "text",
+      "type": "richtext",
+      "label": "t:common.labels.text.write",
+      "default": "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat.</p>"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.position"
+    },
+    {
+      "id": "text_position",
+      "type": "select",
+      "label": "t:common.labels.title.position",
+      "default": "items-start text-left",
+      "options": [
+        {
+          "label": "t:common.alignments.left",
+          "value": "items-start text-left"
+        },
+        {
+          "label": "t:common.alignments.center",
+          "value": "items-center text-center"
+        },
+        {
+          "label": "t:common.alignments.right",
+          "value": "items-end text-right"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.background"
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.button_style"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.button"
+    },
+    {
+      "id": "button_color",
+      "type": "select",
+      "label": "t:common.labels.buttons.color",
+      "default": "button-primary",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "button-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "button-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "button-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "button-tertiary"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "button-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "button-white"
+        }
+      ]
+    },
+    {
+      "id": "button_size",
+      "type": "radio",
+      "label": "t:common.labels.button.size",
+      "default": "py-2",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "py-3"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "py-2"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "py-1"
+        }
+      ]
+    },
+    {
+      "id": "button_style",
+      "type": "select",
+      "label": "t:common.labels.button.style",
+      "default": "button button-ghost",
+      "options": [
+        {
+          "label": "t:common.styles.button.solid",
+          "value": "button"
+        },
+        {
+          "label": "t:common.styles.button.outline",
+          "value": "button button-outline"
+        },
+        {
+          "label": "t:common.styles.button.ghost",
+          "value": "button button-ghost"
+        }
+      ]
+    },
+    {
+      "id": "button_text",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Lorem ipsum"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.position"
+    },
+    {
+      "id": "button_position",
+      "type": "select",
+      "label": "t:common.labels.button.position",
+      "default": "top",
+      "options": [
+        {
+          "label": "t:common.alignments.top",
+          "value": "top"
+        },
+        {
+          "label": "t:common.alignments.bottom",
+          "value": "bottom"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.density"
+    },
+    {
+      "id": "desktop_column_quantity",
+      "type": "radio",
+      "label": "t:common.labels.cards.quantity_desktop",
+      "default": "md:grid-cols-4",
+      "options": [
+        {
+          "label": "t:common.options.cards.four",
+          "value": "md:grid-cols-4"
+        },
+        {
+          "label": "t:common.options.cards.three",
+          "value": "md:grid-cols-3"
+        }
+      ]
+    },
+    {
+      "id": "mobile_column_quantity",
+      "type": "radio",
+      "label": "t:common.labels.cards.quantity_mobile",
+      "default": "grid-cols-2",
+      "options": [
+        {
+          "label": "t:common.options.cards.two",
+          "value": "grid-cols-2"
+        },
+        {
+          "label": "t:common.options.cards.one",
+          "value": "grid-cols-1"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

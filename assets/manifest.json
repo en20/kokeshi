@@ -1,0 +1,10 @@
+{ "short_name": "", "name": "", "description":
+"", "categories": ["shopping"],
+
+
+"display": "standalone", "orientation": "any", "dir": "auto",
+
+"related_applications": [ { "platform": "webapp", "url": "https:\/\/kokeshi.com.br\/cdn\/shop\/t\/7\/assets\/manifest.json?v=85137638734101143761742576267"
+} ], "shortcuts" : [
+
+], "start_url": "/?utm_source=pwa", "scope": "/", "id": "/?utm_source=pwa" }

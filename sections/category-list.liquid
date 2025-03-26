@@ -1,0 +1,639 @@
+{%- liquid
+  assign fetchpriority = 'auto'
+  if section.index == 1
+    assign fetchpriority = 'high'
+  endif
+-%}
+<div class="lazy-item section wrapper {{ section.settings.background_color }}">
+  <div class="mb-12 flex w-full flex-col text-center">
+    <h2 class="title mt-4 font-serif font-bold md:mt-6 {{ section.settings.text_size }} {{ section.settings.text_color }}">
+      {{ section.settings.title }}
+    </h2>
+    <p class="description mt-4 {{ section.settings.description_color }} {{ section.settings.description_size }}">
+      {{ section.settings.description }}
+    </p>
+  </div>
+  <div
+    x-data="
+      {
+        splide: null,
+        init() {
+          const splide = new Splide(this.$refs.collection, {
+            gap: '1rem',
+            arrows: true,
+            fixedWidth: '{{ section.settings.image_size }}',
+            pagination: false,
+            omitEnd: true,
+            focus  : 0,
+            i18n: {
+              prev: '{{ 'common.sr_only.previous' | t }}',
+              next: '{{ 'common.sr_only.next' | t }}',
+              first: '{{ 'common.aria_label.first_slide' | t }}',
+              last: '{{ 'common.aria_label.last_slide' | t }}',
+            }
+          })
+
+          function initPagination(pagination, index) {
+              pagination.addEventListener('click', () =>  splide.go(index))
+            }
+
+            const paginations = document.getElementsByClassName('pagination-item-{{ section.id }}')
+            let current
+            for (let i = 0; i < paginations.length; i++) initPagination(paginations[i], i)
+            splide.on('mounted move', () => {
+              const pagination = paginations[splide.index]
+              if (pagination) {
+                if (current) current.classList.remove('active')
+                pagination.classList.add('active')
+                current = pagination
+              }
+            })
+
+          const Components = splide.Components;
+
+          splide.on( 'resized', function() {
+            const isOverflow = Components.Layout.isOverflow();
+            const list       = Components.Elements.list;
+            const lastSlide  = Components.Slides.getAt( splide.length - 1 );
+
+            if ( lastSlide ) {
+              // Toggles `justify-content: center`
+              list.style.justifyContent = isOverflow ? '' : 'center';
+
+              // Remove the last margin
+              if ( ! isOverflow ) {
+                lastSlide.slide.style.marginRight = '';
+              }
+            }
+          } );
+
+          splide.mount()
+          this.splide = splide
+        }
+      }
+    "
+  >
+    {% assign collections = section.settings.collections | default: collections %}
+    <div x-ref="collection" class="splide">
+      <div class="splide__arrows hidden md:block">
+        <div class="absolute -left-2 flex h-full items-center md:-left-6">
+          <button
+            class="splide__arrow splide__arrow--prev button-icon z-10 disabled:hidden {{ section.settings.navigation_style }} {{ section.settings.navigation_width }} {{ section.settings.navigation_color }}"
+            type="button"
+          >
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M11.0303 3.96967C11.3232 4.26256 11.3232 4.73744 11.0303 5.03033L4.81066 11.25H21C21.4142 11.25 21.75 11.5858 21.75 12C21.75 12.4142 21.4142 12.75 21 12.75H4.81066L11.0303 18.9697C11.3232 19.2626 11.3232 19.7374 11.0303 20.0303C10.7374 20.3232 10.2626 20.3232 9.96967 20.0303L2.46967 12.5303C2.17678 12.2374 2.17678 11.7626 2.46967 11.4697L9.96967 3.96967C10.2626 3.67678 10.7374 3.67678 11.0303 3.96967Z" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
+        <div class="absolute -right-2 flex h-full items-center md:-right-6">
+          <button
+            class="splide__arrow splide__arrow--next button-icon z-10 disabled:hidden {{ section.settings.navigation_style }} {{ section.settings.navigation_width }} {{ section.settings.navigation_color }}"
+            type="button"
+          >
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12.9697 3.96967C13.2626 3.67678 13.7374 3.67678 14.0303 3.96967L21.5303 11.4697C21.671 11.6103 21.75 11.8011 21.75 12C21.75 12.1989 21.671 12.3897 21.5303 12.5303L14.0303 20.0303C13.7374 20.3232 13.2626 20.3232 12.9697 20.0303C12.6768 19.7374 12.6768 19.2626 12.9697 18.9697L19.1893 12.75H3C2.58579 12.75 2.25 12.4142 2.25 12C2.25 11.5858 2.58579 11.25 3 11.25H19.1893L12.9697 5.03033C12.6768 4.73744 12.6768 4.26256 12.9697 3.96967Z" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="splide__track">
+        <ul class="splide__list">
+          {% for collection in collections %}
+            <li class="splide__slide card carousel-item collection overflow-hidden {% if section.settings.border %}border {{ section.settings.border_color }} {{ section.settings.border_size }}{% endif %} {{ section.settings.rounded }} {{ section.settings.card_bg_color }}">
+              <a aria-label="{{ collection.title }}" href="{{ collection.url | default: '#' }}" class="flex flex-col">
+                <div class="w-full scale-90 transition duration-150 ease-in hover:scale-100">
+                  {% if collection.image == blank %}
+                    <img
+                      src="{{ 'image-placeholder-5.jpg' | asset_img_url: 'large' }}"
+                      width="2"
+                      height="2"
+                      alt="{{ 'common.alt.background_image' | t }}"
+                      loading="lazy"
+                      fetchpriority="{{ fetchpriority }}"
+                      class="carousel-item-image collection-image image mx-auto aspect-square w-full object-cover object-center"
+                    >
+                  {% else %}
+                    <img
+                      width="512"
+                      height="512"
+                      loading="lazy"
+                      fetchpriority="{{ fetchpriority }}"
+                      src="{{ collection.image | image_url: width: 512 }}"
+                      alt="{{ collection.description | strip_html | escape }}"
+                      class="carousel-item-image collection-image image mx-auto aspect-square w-full object-cover object-center"
+                    >
+                  {% endif %}
+                </div>
+                <div class="flex flex-col gap-1 p-4 text-center {{ section.settings.collection_text_size }} {{ section.settings.collection_text_color }}">
+                  <h3 class="carousel-item-title collection-title font-serif font-bold">{{ collection.title }}</h3>
+                  <p class="carousel-item-description collection-description line-clamp-3">
+                    {{ collection.description | strip_html | escape }}
+                  </p>
+                </div>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% liquid
+        if section.settings.collections == blank
+          assign length = collections | size | minus: 1
+        else
+          assign length = section.settings.collections.count | minus: 1
+        endif
+      %}
+      <nav class="pagination pagination-dots pagination-primary mt-6 flex w-full items-center justify-center md:hidden">
+        {% for collection in (1..length) %}
+          <button class="pagination-item-{{ section.id }}">
+            <span class="sr-only">
+              {{- 'common.sr_only.go_to_slider' | t }}
+              {{ forloop.index -}}
+            </span>
+          </button>
+        {% endfor %}
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+
+
+{% schema %}
+{
+  "tag": "section",
+  "name": "t:sections.category_list.name",
+  "class": "category-list",
+  "presets": [
+    {
+      "name": "t:sections.category_list.name"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:common.headers.collections"
+    },
+    {
+      "id": "collections",
+      "type": "collection_list",
+      "label": "t:common.labels.collections.select"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.title"
+    },
+    {
+      "id": "text_size",
+      "type": "select",
+      "label": "t:common.labels.title.size",
+      "default": "text-h2 md:text-h1",
+      "options": [
+        {
+          "label": "t:common.sizes.extra_large",
+          "value": "text-h2 md:text-h1"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-h3 md:text-h2"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-h4 md:text-h3"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-h5 md:text-h4"
+        },
+        {
+          "label": "t:common.sizes.tiny",
+          "value": "text-h6 md:text-h5"
+        }
+      ]
+    },
+    {
+      "id": "text_color",
+      "type": "select",
+      "label": "t:common.labels.title.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "label": "t:common.labels.title.write",
+      "default": "Lorem Ipsum"
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.subtitle"
+    },
+    {
+      "id": "description_size",
+      "type": "select",
+      "label": "t:common.labels.subtitle.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "description_color",
+      "type": "select",
+      "label": "t:common.labels.subtitle.color",
+      "default": "text-neutral-600",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "id": "description",
+      "type": "text",
+      "label": "t:common.labels.subtitle.write",
+      "default": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.text"
+    },
+    {
+      "id": "collection_text_size",
+      "type": "select",
+      "label": "t:common.labels.text.size",
+      "default": "text-body-base",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "text-body-lg"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "text-body-base"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "text-body-sm"
+        }
+      ]
+    },
+    {
+      "id": "collection_text_color",
+      "type": "select",
+      "label": "t:common.labels.text.color",
+      "default": "text-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "text-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "text-neutral-600"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "text-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "text-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "text-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "text-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "text-tertiary"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.navigation"
+    },
+    {
+      "id": "navigation_width",
+      "type": "radio",
+      "label": "t:common.labels.buttons.size",
+      "default": "w-12 h-12",
+      "options": [
+        {
+          "label": "t:common.sizes.medium",
+          "value": "w-12 h-12"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "w-8 h-8 p-1"
+        }
+      ]
+    },
+    {
+      "id": "navigation_style",
+      "type": "select",
+      "label": "t:common.labels.button.style",
+      "default": "button-icon",
+      "options": [
+        {
+          "label": "t:common.styles.button.solid",
+          "value": "button-icon"
+        },
+        {
+          "label": "t:common.styles.button.outline",
+          "value": "button-icon button-icon-outline"
+        },
+        {
+          "label": "t:common.styles.button.ghost",
+          "value": "button-icon button-icon-ghost"
+        }
+      ]
+    },
+    {
+      "id": "navigation_color",
+      "type": "select",
+      "label": "t:common.labels.navigation.color",
+      "default": "button-icon-primary",
+      "options": [
+        {
+          "label": "t:common.colors.primary",
+          "value": "button-icon-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "button-icon-accent"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "button-icon-black"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "button-icon-white"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.border"
+    },
+    {
+      "id": "border",
+      "type": "checkbox",
+      "label": "t:common.labels.border.show",
+      "default": true
+    },
+    {
+      "id": "border_size",
+      "type": "select",
+      "label": "t:common.labels.border.size",
+      "default": "border",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "border-4"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "border-2"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "border"
+        }
+      ]
+    },
+    {
+      "id": "border_color",
+      "type": "select",
+      "label": "t:common.labels.border.color",
+      "default": "border-black",
+      "options": [
+        {
+          "label": "t:common.colors.black",
+          "value": "border-black"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "border-neutral-400"
+        },
+        {
+          "label": "t:common.colors.white",
+          "value": "border-white"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "border-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "border-accent"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.cards"
+    },
+    {
+      "id": "rounded",
+      "type": "select",
+      "label": "t:common.labels.border.radius",
+      "default": "rounded-none",
+      "options": [
+        {
+          "label": "t:common.sizes.none",
+          "value": "rounded-none"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "rounded"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "rounded-lg"
+        },
+        {
+          "label": "t:common.sizes.large",
+          "value": "rounded-2xl"
+        },
+        {
+          "label": "t:common.sizes.full",
+          "value": "rounded-full"
+        }
+      ]
+    },
+    {
+      "id": "card_bg_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.image"
+    },
+    {
+      "id": "image_size",
+      "type": "select",
+      "label": "t:common.labels.image.size",
+      "default": "14rem",
+      "options": [
+        {
+          "label": "t:common.sizes.large",
+          "value": "14rem"
+        },
+        {
+          "label": "t:common.sizes.medium",
+          "value": "12rem"
+        },
+        {
+          "label": "t:common.sizes.small",
+          "value": "10rem"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "t:common.headers.background"
+    },
+    {
+      "id": "background_color",
+      "type": "select",
+      "label": "t:common.labels.background.color",
+      "default": "bg-white",
+      "options": [
+        {
+          "label": "t:common.colors.white",
+          "value": "bg-white"
+        },
+        {
+          "label": "t:common.colors.neutral",
+          "value": "bg-neutral-100"
+        },
+        {
+          "label": "t:common.colors.black",
+          "value": "bg-black"
+        },
+        {
+          "label": "t:common.colors.primary",
+          "value": "bg-primary"
+        },
+        {
+          "label": "t:common.colors.accent",
+          "value": "bg-accent"
+        },
+        {
+          "label": "t:common.colors.secondary",
+          "value": "bg-secondary"
+        },
+        {
+          "label": "t:common.colors.tertiary",
+          "value": "bg-tertiary"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
